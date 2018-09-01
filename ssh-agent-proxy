@@ -226,7 +226,7 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
         return key_blob, data, flags
 
 
-def parse_args():
+def parse_args(argv):
     """Parse and return the parsed command line arguments."""
     parser = argparse.ArgumentParser(
         description='filtering proxy for ssh-agent',
@@ -257,7 +257,7 @@ def parse_args():
         default='/etc/keyholder-auth.d',
         help='directory with YAML configuration files'
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def setup_logging(debug):
@@ -279,9 +279,9 @@ def setup_logging(debug):
         logger.addHandler(syslog_handler)
 
 
-def main():
+def main(argv=None):
     """Main entry point; runs forever."""
-    args = parse_args()
+    args = parse_args(argv)
     setup_logging(args.debug)
 
     perms = get_key_perms(args.auth_dir, args.key_dir)
