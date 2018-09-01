@@ -124,9 +124,8 @@ class SshAgentProxyServer(socketserver.ThreadingUnixStreamServer):
         self.key_perms = key_perms
 
     def handle_error(self, request, client_address):
-        super().handle_error(request, client_address)
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        logger.error('[%s] %s', exc_type, exc_value)
+        exc_type, exc_value = sys.exc_info()[:2]
+        logger.exception('Unhandled error: [%s] %s', exc_type, exc_value)
 
 
 class SshAgentProxyHandler(socketserver.BaseRequestHandler):
@@ -271,6 +270,7 @@ def setup_logging(debug):
             facility='auth',
         )
         fmt = logging.Formatter('%(name)s[%(process)d]: %(message)s')
+        fmt.formatException = lambda x: ''
         syslog_handler.setFormatter(fmt)
         logger.addHandler(syslog_handler)
 
