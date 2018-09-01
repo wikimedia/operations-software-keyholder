@@ -171,12 +171,10 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
 
         elif code == SSH2_AGENTC_SIGN_REQUEST:
             key_blob, *_ = self.parse_sign_request(message)
-            key_digest_md5 = hashlib.md5(key_blob).hexdigest()
-            key_digest_sha256 = (b'SHA256' + base64.b64encode(hashlib.sha256(
+            key_digest = (b'SHA256' + base64.b64encode(hashlib.sha256(
                 key_blob).digest()).rstrip(b'=')).decode('utf-8')
             user, groups = self.get_peer_credentials(self.request)
-            if groups & self.server.key_perms.get(key_digest_md5, set()).union(
-                    self.server.key_perms.get(key_digest_sha256, set())):
+            if groups & self.server.key_perms.get(key_digest, set()):
                 logger.info('Granting agent sign request for user %s', user)
                 self.send_message(self.backend, code, message)
             else:
