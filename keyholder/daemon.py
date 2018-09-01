@@ -44,20 +44,13 @@ import sys
 
 import yaml
 
+from keyholder.protocol.agent import SshAgentRequestCode, SshAgentResponseCode
+from keyholder.protocol.agent import SshAgentSignatureFlags
+
 logger = logging.getLogger('keyholder')
 
 # Defined in <socket.h>.
 SO_PEERCRED = 17
-
-# These constants are part of OpenSSH's ssh-agent protocol spec.
-# See <http://api.libssh.org/rfc/PROTOCOL.agent>.
-SSH2_AGENTC_REQUEST_IDENTITIES = 11
-SSH2_AGENTC_SIGN_REQUEST = 13
-SSH_AGENT_FAILURE = 5
-
-SSH_AGENT_OLD_SIGNATURE = 1
-SSH_AGENT_RSA_SHA2_256 = 2
-SSH_AGENT_RSA_SHA2_512 = 4
 
 s_message_header = struct.Struct('!LB')
 s_flags = struct.Struct('!L')
@@ -127,7 +120,8 @@ class SshAgentProxyServer(socketserver.ThreadingUnixStreamServer):
         exc_type, exc_value = sys.exc_info()[:2]
         logger.exception('Unhandled error: [%s] %s', exc_type, exc_value)
         # respond to the client with an SSH_AGENT_FAILURE
-        SshAgentProxyHandler.send_message(request, SSH_AGENT_FAILURE)
+        SshAgentProxyHandler.send_message(request,
+                                          SshAgentResponseCode.FAILURE)
 
 
 class SshAgentProxyHandler(socketserver.BaseRequestHandler):
@@ -169,12 +163,12 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
 
     def handle_client_request(self, code, message):
         """Read data from client and send to backend SSH agent."""
-        if code == SSH2_AGENTC_REQUEST_IDENTITIES:
+        if code == SshAgentRequestCode.REQUEST_IDENTITIES:
             if message:
                 raise SshAgentProtocolError('Trailing bytes')
             self.send_message(self.backend, code)
 
-        elif code == SSH2_AGENTC_SIGN_REQUEST:
+        elif code == SshAgentRequestCode.SIGN_REQUEST:
             key_blob, *_ = self.parse_sign_request(message)
             key_digest = (b'SHA256:' + base64.b64encode(hashlib.sha256(
                 key_blob).digest()).rstrip(b'=')).decode('utf-8')
@@ -184,11 +178,11 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
                 self.send_message(self.backend, code, message)
             else:
                 logger.info('Refusing agent sign request for user %s', user)
-                self.send_message(self.request, SSH_AGENT_FAILURE)
+                self.send_message(self.request, SshAgentResponseCode.FAILURE)
 
         else:
             logger.debug('Unknown request code %d, refusing', code)
-            self.send_message(self.request, SSH_AGENT_FAILURE)
+            self.send_message(self.request, SshAgentResponseCode.FAILURE)
 
     def handle(self):
         """Handle a new client connection by shuttling data between the client
@@ -206,7 +200,7 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
 
     @staticmethod
     def parse_sign_request(message):
-        """Parse the payload of an SSH2_AGENTC_SIGN_REQUEST into its
+        """Parse the payload of an SSH_AGENTC_SIGN_REQUEST into its
         constituent parts: a key blob, data, and a uint32 flag."""
         key_blob, offset = unpack_variable_length_string(message)
         data, offset = unpack_variable_length_string(message, offset)
@@ -215,12 +209,9 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
         if offset + s_flags.size != len(message):
             raise SshAgentProtocolError('Trailing bytes')
 
-        # this is not the right way to be parsing flags, as in theory they can
-        # coexist; in practice the existing ones cannot meaningfully coexist so
-        # that will do for now. In Python >= 3.6, they should be replaced with
-        # the builtin class Flag.
-        if flags not in (0, SSH_AGENT_OLD_SIGNATURE,
-                         SSH_AGENT_RSA_SHA2_256, SSH_AGENT_RSA_SHA2_512):
+        try:
+            SshAgentSignatureFlags(flags)
+        except ValueError:
             raise SshAgentProtocolError('Unrecognized flags 0x%X' % flags)
 
         return key_blob, data, flags
