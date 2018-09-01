@@ -26,6 +26,7 @@ setuptools.setup(
     keywords=['ssh', 'agent'],
     install_requires=[
         'pyyaml',
+        'construct==2.8.16',
     ],
     entry_points={
         'console_scripts': [

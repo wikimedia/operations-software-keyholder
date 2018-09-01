@@ -44,28 +44,20 @@ import sys
 import yaml
 
 from keyholder.protocol.agent import SshAgentRequestCode, SshAgentResponseCode
-from keyholder.protocol.agent import SshAgentSignatureFlags
+from keyholder.protocol.agent import SshAgentCommand, SshAgentCommandHeader
+from keyholder.protocol.agent import SshAgentSignRequest
+from construct.core import ConstructError
 
 logger = logging.getLogger('keyholder')
 
 # Defined in <socket.h>.
 SO_PEERCRED = 17
 
-s_message_header = struct.Struct('!LB')
-s_flags = struct.Struct('!L')
 s_ucred = struct.Struct('2Ii')
 
 
 class SshAgentProtocolError(OSError):
     """Custom exception class for protocol errors."""
-
-
-def unpack_variable_length_string(buffer, offset=0):
-    """Read a variable-length string from a buffer. The first 4 bytes are the
-    big-endian unsigned long representing the length of the string."""
-    fmt = 'xxxx%ds' % struct.unpack_from('!L', buffer, offset)
-    string, = struct.unpack_from(fmt, buffer, offset)
-    return string, offset + struct.calcsize(fmt)
 
 
 def get_key_fingerprints(key_dir):
@@ -146,31 +138,46 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
     @staticmethod
     def recv_message(sock):
         """Read a message from a socket."""
-        header = sock.recv(s_message_header.size, socket.MSG_WAITALL)
-        try:
-            size, code = s_message_header.unpack(header)
-        except struct.error:
+        head = sock.recv(SshAgentCommandHeader.sizeof(), socket.MSG_WAITALL)
+        if len(head) != SshAgentCommandHeader.sizeof():
             return None, b''
-        message = sock.recv(size - 1, socket.MSG_WAITALL)
-        return code, message
+
+        try:
+            size = SshAgentCommandHeader.parse(head)
+            tail = sock.recv(size, socket.MSG_WAITALL)
+            command = SshAgentCommand.parse(head + tail)
+        except ConstructError:
+            raise SshAgentProtocolError('Invalid message received')
+
+        return command.code, command.message
 
     @staticmethod
     def send_message(sock, code, message=b''):
         """Send a message on a socket."""
-        header = s_message_header.pack(len(message) + 1, code)
-        sock.sendall(header + message)
+        try:
+            command = SshAgentCommand.build({
+                'code': code,
+                'message': message,
+            })
+            sock.sendall(command)
+        except ConstructError:
+            raise SshAgentProtocolError('Cannot construct a valid message')
 
     def handle_client_request(self, code, message):
         """Read data from client and send to backend SSH agent."""
         if code == SshAgentRequestCode.REQUEST_IDENTITIES:
             if message:
-                raise SshAgentProtocolError('Trailing bytes')
+                raise SshAgentProtocolError('Unexpected data')
             self.send_message(self.backend, code)
 
         elif code == SshAgentRequestCode.SIGN_REQUEST:
-            key_blob, *_ = self.parse_sign_request(message)
+            try:
+                request = SshAgentSignRequest.parse(message)
+            except ConstructError:
+                raise SshAgentProtocolError('Invalid sign request received')
+
             key_digest = (b'SHA256:' + base64.b64encode(hashlib.sha256(
-                key_blob).digest()).rstrip(b'=')).decode('utf-8')
+                request.key_blob).digest()).rstrip(b'=')).decode('utf-8')
             user, groups = self.get_peer_credentials(self.request)
             if groups & self.server.key_perms.get(key_digest, set()):
                 logger.info('Granting agent sign request for user %s', user)
@@ -180,7 +187,7 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
                 self.send_message(self.request, SshAgentResponseCode.FAILURE)
 
         else:
-            logger.debug('Unknown request code %d, refusing', code)
+            logger.debug('Request type %s not implemented', code.name)
             self.send_message(self.request, SshAgentResponseCode.FAILURE)
 
     def handle(self):
@@ -196,24 +203,6 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
                 if not code:
                     return
                 self.handle_client_request(code, message)
-
-    @staticmethod
-    def parse_sign_request(message):
-        """Parse the payload of an SSH_AGENTC_SIGN_REQUEST into its
-        constituent parts: a key blob, data, and a uint32 flag."""
-        key_blob, offset = unpack_variable_length_string(message)
-        data, offset = unpack_variable_length_string(message, offset)
-        flags, = s_flags.unpack_from(message, offset)
-
-        if offset + s_flags.size != len(message):
-            raise SshAgentProtocolError('Trailing bytes')
-
-        try:
-            SshAgentSignatureFlags(flags)
-        except ValueError:
-            raise SshAgentProtocolError('Unrecognized flags 0x%X' % flags)
-
-        return key_blob, data, flags
 
 
 def parse_args(argv):
