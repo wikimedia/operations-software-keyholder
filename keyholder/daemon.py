@@ -53,7 +53,6 @@ SO_PEERCRED = 17
 # See <http://api.libssh.org/rfc/PROTOCOL.agent>.
 SSH2_AGENTC_REQUEST_IDENTITIES = 11
 SSH2_AGENTC_SIGN_REQUEST = 13
-SSH_AGENTC_REQUEST_RSA_IDENTITIES = 1
 SSH_AGENT_FAILURE = 5
 
 SSH_AGENT_OLD_SIGNATURE = 1
@@ -166,8 +165,7 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
 
     def handle_client_request(self, code, message):
         """Read data from client and send to backend SSH agent."""
-        if code in (SSH2_AGENTC_REQUEST_IDENTITIES,
-                    SSH_AGENTC_REQUEST_RSA_IDENTITIES):
+        if code == SSH2_AGENTC_REQUEST_IDENTITIES:
             if message:
                 raise SshAgentProtocolError('Trailing bytes')
             self.send_message(self.backend, code)
