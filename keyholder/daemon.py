@@ -96,7 +96,16 @@ def get_key_perms(auth_dir, key_dir):
     fingerprints = get_key_fingerprints(key_dir)
     for fname in glob.glob(os.path.join(auth_dir, '*.y*ml')):
         with open(fname) as yml:
-            for group, keys in yaml.safe_load(yml).items():
+            try:
+                data = yaml.safe_load(yml).items()
+            except (yaml.YAMLError, AttributeError):
+                logger.warning('Unable to read and parse %s', fname)
+                continue
+
+            for group, keys in data:
+                if keys is None:
+                    continue
+
                 for key in keys:
                     if key not in fingerprints:
                         logger.info('Fingerprint not found for key %s', key)
