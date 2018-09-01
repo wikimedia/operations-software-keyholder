@@ -83,7 +83,7 @@ def get_key_fingerprints(key_dir):
             ['/usr/bin/ssh-keygen', '-lf', fname], universal_newlines=True)
         bits, fingerprint, note = line.split(' ', 2)
         keyfile = os.path.splitext(os.path.basename(fname))[0]
-        keymap[keyfile] = fingerprint.replace(':', '')
+        keymap[keyfile] = fingerprint
     logger.info('Successfully loaded %d key(s)', len(keymap))
     return keymap
 
@@ -171,7 +171,7 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
 
         elif code == SSH2_AGENTC_SIGN_REQUEST:
             key_blob, *_ = self.parse_sign_request(message)
-            key_digest = (b'SHA256' + base64.b64encode(hashlib.sha256(
+            key_digest = (b'SHA256:' + base64.b64encode(hashlib.sha256(
                 key_blob).digest()).rstrip(b'=')).decode('utf-8')
             user, groups = self.get_peer_credentials(self.request)
             if groups & self.server.key_perms.get(key_digest, set()):
