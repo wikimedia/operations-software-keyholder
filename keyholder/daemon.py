@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+
 """
-  ssh-agent-proxy -- filtering proxy for ssh-agent
+  keyholderd -- filtering proxy for ssh-agent
 
   Creates a UNIX domain socket that proxies connections to an ssh-agent(1)
   socket, disallowing any operations except listing identities and signing
   requests. Request signing is only permitted if group is allowed to use
   the requested public key fingerprint.
-
-  Requirements: PyYAML (http://pyyaml.org/)
 
   Copyright 2015-2018 Wikimedia Foundation, Inc.
   Copyright 2015 Ori Livneh <ori@wikimedia.org>
@@ -44,17 +42,9 @@ import struct
 import subprocess
 import sys
 
-try:
-    import yaml
-except ImportError:
-    sys.exit(
-        'Error: ssh-agent-proxy requires PyYAML (http://pyyaml.org/)\n'
-        'Debian / Ubuntu: `apt-get install python3-yaml`\n'
-        'RHEL / Fedora / CentOS: `yum install python-yaml`\n'
-        'All others: `pip3 install PyYAML`'
-    )
+import yaml
 
-logger = logging.getLogger('ssh-agent-proxy')
+logger = logging.getLogger('keyholder')
 
 # Defined in <socket.h>.
 SO_PEERCRED = 17
@@ -229,6 +219,7 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
 def parse_args(argv):
     """Parse and return the parsed command line arguments."""
     parser = argparse.ArgumentParser(
+        prog='keyholderd',
         description='filtering proxy for ssh-agent',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
