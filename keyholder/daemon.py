@@ -126,13 +126,16 @@ class SshAgentProxyServer(socketserver.ThreadingUnixStreamServer):
     def handle_error(self, request, client_address):
         exc_type, exc_value = sys.exc_info()[:2]
         logger.exception('Unhandled error: [%s] %s', exc_type, exc_value)
+        # respond to the client with an SSH_AGENT_FAILURE
+        SshAgentProxyHandler.send_message(request, SSH_AGENT_FAILURE)
 
 
 class SshAgentProxyHandler(socketserver.BaseRequestHandler):
     """This class is responsible for handling an individual connection
     to an SshAgentProxyServer."""
 
-    def get_peer_credentials(self, sock):
+    @staticmethod
+    def get_peer_credentials(sock):
         """Return the user and group name of the peer of a UNIX socket."""
         ucred = sock.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, s_ucred.size)
         _, uid, gid = s_ucred.unpack(ucred)
@@ -147,7 +150,8 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
         self.backend.setblocking(False)
         self.backend.connect(self.server.agent_address)
 
-    def recv_message(self, sock):
+    @staticmethod
+    def recv_message(sock):
         """Read a message from a socket."""
         header = sock.recv(s_message_header.size, socket.MSG_WAITALL)
         try:
@@ -157,7 +161,8 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
         message = sock.recv(size - 1, socket.MSG_WAITALL)
         return code, message
 
-    def send_message(self, sock, code, message=b''):
+    @staticmethod
+    def send_message(sock, code, message=b''):
         """Send a message on a socket."""
         header = s_message_header.pack(len(message) + 1, code)
         sock.sendall(header + message)
@@ -199,7 +204,8 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
                     return
                 self.handle_client_request(code, message)
 
-    def parse_sign_request(self, message):
+    @staticmethod
+    def parse_sign_request(message):
         """Parse the payload of an SSH2_AGENTC_SIGN_REQUEST into its
         constituent parts: a key blob, data, and a uint32 flag."""
         key_blob, offset = unpack_variable_length_string(message)
