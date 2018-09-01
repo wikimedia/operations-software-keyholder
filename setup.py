@@ -35,6 +35,10 @@ setuptools.setup(
     scripts=['bin/keyholder'],
     setup_requires=[
         'setuptools_scm',
+        'pytest-runner>=2.0,<3dev',
+    ],
+    tests_require=[
+        'pytest',
     ],
     zip_safe=False,
     use_scm_version=True,
