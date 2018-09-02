@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-  keyholderd -- filtering proxy for ssh-agent
+  keyholderd -- multi-user SSH agent
 
   Creates a UNIX domain socket that proxies connections to an ssh-agent(1)
   socket, disallowing any operations except listing identities and signing
@@ -98,12 +98,12 @@ def get_key_perms(auth_dir, key_dir):
     return key_perms
 
 
-class SshAgentProxyServer(socketserver.ThreadingUnixStreamServer):
+class SshAgentServer(socketserver.ThreadingUnixStreamServer):
     """A threaded server that listens on a UNIX domain socket and handles
     requests by filtering them and proxying them to a backend SSH agent."""
 
     def __init__(self, server_address, agent_address, key_perms):
-        super().__init__(server_address, SshAgentProxyHandler)
+        super().__init__(server_address, SshAgentHandler)
         self.agent_address = agent_address
         self.key_perms = key_perms
 
@@ -111,13 +111,12 @@ class SshAgentProxyServer(socketserver.ThreadingUnixStreamServer):
         exc_type, exc_value = sys.exc_info()[:2]
         logger.exception('Unhandled error: [%s] %s', exc_type, exc_value)
         # respond to the client with an SSH_AGENT_FAILURE
-        SshAgentProxyHandler.send_message(request,
-                                          SshAgentResponseCode.FAILURE)
+        SshAgentHandler.send_message(request, SshAgentResponseCode.FAILURE)
 
 
-class SshAgentProxyHandler(socketserver.BaseRequestHandler):
+class SshAgentHandler(socketserver.BaseRequestHandler):
     """This class is responsible for handling an individual connection
-    to an SshAgentProxyServer."""
+    to an SshAgentServer."""
 
     @staticmethod
     def get_peer_credentials(sock):
@@ -216,7 +215,7 @@ def parse_args(argv):
     """Parse and return the parsed command line arguments."""
     parser = argparse.ArgumentParser(
         prog='keyholderd',
-        description='filtering proxy for ssh-agent',
+        description='multi-user SSH agent',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
@@ -275,7 +274,7 @@ def main(argv=sys.argv[1:]):
     perms = get_key_perms(args.auth_dir, args.key_dir)
     logger.info('Initialized and serving requests')
 
-    server = SshAgentProxyServer(args.bind, args.connect, perms)
+    server = SshAgentServer(args.bind, args.connect, perms)
 
     try:
         server.serve_forever()
