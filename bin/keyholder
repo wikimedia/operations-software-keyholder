@@ -55,20 +55,15 @@ prefers_root()  { ! is_root && can_sudo && { sudo $0 "$command" ; exit $? ; } ; 
 case "$command" in
   status)
     prefers_root
-    for service in agent proxy; do
-      if [ -x "/sbin/status" ]; then # upstart
-          /sbin/status "keyholder-${service}" || continue
-      elif [ -x "/bin/systemctl" ]; then  # systemd
-          echo -e "keyholder-${service}: \c"
-          /bin/systemctl is-active "keyholder-${service}" || continue
-      fi
-      [ -r "/run/keyholder/${service}.sock" ] || continue
-      SSH_AUTH_SOCK="/run/keyholder/${service}.sock" /usr/bin/ssh-add -l | sed 's/^/- /'
+    echo -e "keyholder: \c"
+    /bin/systemctl is-active keyholder || continue
+    [ -r /run/keyholder/agent.sock ] || continue
+    SSH_AUTH_SOCK=/run/keyholder/agent.sock /usr/bin/ssh-add -l | sed 's/^/- /'
     done
     ;;
   list-keys)
     prefers_root
-    SSH_AUTH_SOCK="/run/keyholder/agent.sock" /usr/bin/ssh-add -l | sed 's/^[0-9]* //'
+    SSH_AUTH_SOCK=/run/keyholder/agent.sock /usr/bin/ssh-add -l | sed 's/^[0-9]* //'
     ;;
   add)
     requires_root
@@ -90,7 +85,7 @@ case "$command" in
     ;;
   start|stop|restart)
     requires_root
-    service keyholder-agent "${command}"
+    service keyholder "${command}"
     ;;
   *)
     show_usage

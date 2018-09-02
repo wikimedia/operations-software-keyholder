@@ -3,11 +3,6 @@
 """
   keyholderd -- multi-user SSH agent
 
-  Creates a UNIX domain socket that proxies connections to an ssh-agent(1)
-  socket, disallowing any operations except listing identities and signing
-  requests. Request signing is only permitted if group is allowed to use
-  the requested public key fingerprint.
-
   Copyright 2015-2018 Wikimedia Foundation, Inc.
   Copyright 2015 Ori Livneh <ori@wikimedia.org>
   Copyright 2015 Tyler Cipriani <thcipriani@wikimedia.org>
@@ -28,6 +23,7 @@
 """
 import argparse
 import base64
+import collections
 import glob
 import grp
 import hashlib
@@ -35,7 +31,6 @@ import logging
 import logging.handlers
 import os
 import pwd
-import select
 import socket
 import socketserver
 import struct
@@ -44,8 +39,11 @@ import sys
 
 import yaml
 
-from keyholder.protocol.agent import SshAgentRequestCode, SshAgentResponseCode
+from keyholder.crypto import SshRSAKey, SshEd25519Key
+from keyholder.protocol.agent import SshAgentResponseCode
 from keyholder.protocol.agent import SshAgentCommand, SshAgentCommandHeader
+from keyholder.protocol.agent import SshAgentIdentities
+from keyholder.protocol.agent import SshAddIdentity, SshRemoveIdentity
 from keyholder.protocol.agent import SshAgentSignRequest
 from construct.core import ConstructError
 
@@ -100,12 +98,11 @@ def get_key_perms(auth_dir, key_dir):
 
 
 class SshAgentServer(socketserver.ThreadingUnixStreamServer):
-    """A threaded server that listens on a UNIX domain socket and handles
-    requests by filtering them and proxying them to a backend SSH agent."""
+    """A threaded server that listens on a UNIX domain socket."""
 
-    def __init__(self, server_address, agent_address, key_perms):
+    def __init__(self, server_address, key_perms):
         super().__init__(server_address, SshAgentHandler)
-        self.agent_address = agent_address
+        self.keys = collections.OrderedDict()
         self.key_perms = key_perms
 
     def handle_error(self, request, client_address):
@@ -128,12 +125,6 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
         groups = {grp.getgrgid(gid).gr_name}
         groups.update(g.gr_name for g in grp.getgrall() if user in g.gr_mem)
         return user, groups
-
-    def setup(self):
-        """Set up a connection to the backend SSH agent backend."""
-        self.backend = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self.backend.setblocking(False)
-        self.backend.connect(self.server.agent_address)
 
     @staticmethod
     def recv_message(sock):
@@ -164,29 +155,87 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
             raise SshAgentProtocolError('Cannot construct a valid message')
 
     def handle(self):
-        """Handle a new client connection by shuttling data between the client
-        and the backend."""
+        """Handle client connections and process their commands."""
         while 1:
-            rlist, *_ = select.select((self.backend, self.request), (), (), 1)
-            if self.backend in rlist:
-                code, message = self.recv_message(self.backend)
-                self.send_message(self.request, code, message)
-            if self.request in rlist:
-                code, message = self.recv_message(self.request)
-                if not code:
-                    return
+            code, message = self.recv_message(self.request)
+            if code is None:
+                return
 
-                method = getattr(self, 'handle_' + code.name.lower(), None)
-                if method:
-                    method(message)
-                else:
-                    self.handle_not_implemented(code)
+            method = getattr(self, 'handle_' + code.name.lower(), None)
+            if method:
+                method(message)
+            else:
+                self.handle_not_implemented(code)
 
     def handle_request_identities(self, message):
         """Handle the request identities command, listing all identities."""
         if message:
             raise SshAgentProtocolError('Unexpected data')
-        self.send_message(self.backend, SshAgentRequestCode.REQUEST_IDENTITIES)
+
+        identities = []
+        for key in self.server.keys.values():
+            identities.append({
+                'key_blob': key.key_blob,
+                'comment': key.comment,
+            })
+        self.send_message(self.request, SshAgentResponseCode.IDENTITIES_ANSWER,
+                          SshAgentIdentities.build(identities))
+
+    def handle_add_identity(self, message):
+        """Handle the add identity command, adding a new key to the agent."""
+        try:
+            identity = SshAddIdentity.parse(message)
+        except ConstructError:
+            raise SshAgentProtocolError('Unable to parse identity')
+
+        try:
+            # pylint: disable=redefined-variable-type
+            if identity.key_type == 'ssh-rsa':
+                tup = [getattr(identity.key, t) for t in 'nedpq']
+                key = SshRSAKey(tup, identity.key.comment)
+            elif identity.key_type == 'ssh-ed25519':
+                key = SshEd25519Key(identity.key.enc_a, identity.key.k_enc_a,
+                                    identity.key.comment)
+            else:
+                logger.warning('Unsupported key type %s', identity.key_type)
+                self.send_message(self.request, SshAgentResponseCode.FAILURE)
+                return
+        except TypeError:
+            logger.warning('Cannot add key to agent, invalid key')
+            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+        else:
+            self.server.keys[key.fingerprint] = key
+            logger.info('Successfully added key %s', key.comment)
+            self.send_message(self.request, SshAgentResponseCode.SUCCESS)
+
+    def handle_remove_identity(self, message):
+        """Handle the remove identity command, removing a key from the
+        agent."""
+        try:
+            identity = SshRemoveIdentity.parse(message)
+        except ConstructError:
+            raise SshAgentProtocolError('Unable to parse identity')
+
+        key_digest = (b'SHA256:' + base64.b64encode(hashlib.sha256(
+            identity.key_blob).digest()).rstrip(b'=')).decode('utf-8')
+
+        try:
+            comment = self.server.keys[key_digest].comment
+            del self.server.keys[key_digest]
+            logger.info('Successfully removed key %s', comment)
+            self.send_message(self.request, SshAgentResponseCode.SUCCESS)
+        except KeyError:
+            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+
+    def handle_remove_all_identities(self, message):
+        """Handle the remove all identities command, removing all keys from
+        the agent."""
+        if message:
+            raise SshAgentProtocolError('Unexpected data')
+
+        self.server.keys.clear()
+        logger.info('Removed all keys')
+        self.send_message(self.request, SshAgentResponseCode.SUCCESS)
 
     def handle_sign_request(self, message):
         """Handle a sign request command."""
@@ -197,11 +246,20 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
 
         key_digest = (b'SHA256:' + base64.b64encode(hashlib.sha256(
             request.key_blob).digest()).rstrip(b'=')).decode('utf-8')
+
+        try:
+            key = self.server.keys[key_digest]
+        except KeyError:
+            logger.info('Refusing agent sign request, key was not found')
+            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+            return
+
         user, groups = self.get_peer_credentials(self.request)
         if groups & self.server.key_perms.get(key_digest, set()):
             logger.info('Granting agent sign request for user %s', user)
-            self.send_message(self.backend, SshAgentRequestCode.SIGN_REQUEST,
-                              message)
+            signature = key.sign(request.data, request.flags)
+            self.send_message(self.request, SshAgentResponseCode.SIGN_RESPONSE,
+                              signature)
         else:
             logger.info('Refusing agent sign request for user %s', user)
             self.send_message(self.request, SshAgentResponseCode.FAILURE)
@@ -226,13 +284,8 @@ def parse_args(argv):
     )
     parser.add_argument(
         '--bind',
-        default='/run/keyholder/proxy.sock',
-        help='Bind the proxy to the domain socket at this address'
-    )
-    parser.add_argument(
-        '--connect',
         default='/run/keyholder/agent.sock',
-        help='Proxy connects to the ssh-agent socket at this address'
+        help='Bind the agent to the domain socket at this address'
     )
     parser.add_argument(
         '--key-dir',
@@ -275,7 +328,7 @@ def main(argv=None):
     perms = get_key_perms(args.auth_dir, args.key_dir)
     logger.info('Initialized and serving requests')
 
-    server = SshAgentServer(args.bind, args.connect, perms)
+    server = SshAgentServer(args.bind, perms)
 
     try:
         server.serve_forever()
