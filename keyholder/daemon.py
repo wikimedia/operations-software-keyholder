@@ -164,33 +164,6 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
         except ConstructError:
             raise SshAgentProtocolError('Cannot construct a valid message')
 
-    def handle_client_request(self, code, message):
-        """Read data from client and send to backend SSH agent."""
-        if code == SshAgentRequestCode.REQUEST_IDENTITIES:
-            if message:
-                raise SshAgentProtocolError('Unexpected data')
-            self.send_message(self.backend, code)
-
-        elif code == SshAgentRequestCode.SIGN_REQUEST:
-            try:
-                request = SshAgentSignRequest.parse(message)
-            except ConstructError:
-                raise SshAgentProtocolError('Invalid sign request received')
-
-            key_digest = (b'SHA256:' + base64.b64encode(hashlib.sha256(
-                request.key_blob).digest()).rstrip(b'=')).decode('utf-8')
-            user, groups = self.get_peer_credentials(self.request)
-            if groups & self.server.key_perms.get(key_digest, set()):
-                logger.info('Granting agent sign request for user %s', user)
-                self.send_message(self.backend, code, message)
-            else:
-                logger.info('Refusing agent sign request for user %s', user)
-                self.send_message(self.request, SshAgentResponseCode.FAILURE)
-
-        else:
-            logger.debug('Request type %s not implemented', code.name)
-            self.send_message(self.request, SshAgentResponseCode.FAILURE)
-
     def handle(self):
         """Handle a new client connection by shuttling data between the client
         and the backend."""
@@ -203,7 +176,41 @@ class SshAgentProxyHandler(socketserver.BaseRequestHandler):
                 code, message = self.recv_message(self.request)
                 if not code:
                     return
-                self.handle_client_request(code, message)
+
+                method = getattr(self, 'handle_' + code.name.lower(), None)
+                if method:
+                    method(message)
+                else:
+                    self.handle_not_implemented(code)
+
+    def handle_request_identities(self, message):
+        """Handle the request identities command, listing all identities."""
+        if message:
+            raise SshAgentProtocolError('Unexpected data')
+        self.send_message(self.backend, SshAgentRequestCode.REQUEST_IDENTITIES)
+
+    def handle_sign_request(self, message):
+        """Handle a sign request command."""
+        try:
+            request = SshAgentSignRequest.parse(message)
+        except ConstructError:
+            raise SshAgentProtocolError('Invalid sign request received')
+
+        key_digest = (b'SHA256:' + base64.b64encode(hashlib.sha256(
+            request.key_blob).digest()).rstrip(b'=')).decode('utf-8')
+        user, groups = self.get_peer_credentials(self.request)
+        if groups & self.server.key_perms.get(key_digest, set()):
+            logger.info('Granting agent sign request for user %s', user)
+            self.send_message(self.backend, SshAgentRequestCode.SIGN_REQUEST,
+                              message)
+        else:
+            logger.info('Refusing agent sign request for user %s', user)
+            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+
+    def handle_not_implemented(self, code):
+        """Catch all for not implement commands."""
+        logger.debug('Request type %s not implemented', code.name)
+        self.send_message(self.request, SshAgentResponseCode.FAILURE)
 
 
 def parse_args(argv):
