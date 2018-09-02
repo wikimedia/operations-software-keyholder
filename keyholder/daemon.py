@@ -25,12 +25,12 @@ import argparse
 import base64
 import collections
 import ctypes
-import glob
 import grp
 import hashlib
 import logging
 import logging.handlers
 import os
+import pathlib
 import pwd
 import socket
 import socketserver
@@ -60,12 +60,15 @@ class SshAgentProtocolError(OSError):
 def get_key_fingerprints(key_dir):
     """Look up the key fingerprints for all keys held by keyholder"""
     keymap = {}
-    for fname in glob.glob(os.path.join(key_dir, '*.pub')):
+    if not key_dir.is_dir():
+        logger.warning('%s is not a directory', key_dir)
+
+    for fname in key_dir.glob('*.pub'):
         line = subprocess.check_output(
-            ['/usr/bin/ssh-keygen', '-lf', fname], universal_newlines=True)
+            ['/usr/bin/ssh-keygen', '-lf', str(fname)],
+            universal_newlines=True)
         _, fingerprint, _ = line.split(' ', 2)
-        keyfile = os.path.splitext(os.path.basename(fname))[0]
-        keymap[keyfile] = fingerprint
+        keymap[fname.stem] = fingerprint
     logger.info('Successfully loaded %d key(s)', len(keymap))
     return keymap
 
@@ -74,24 +77,29 @@ def get_key_perms(auth_dir, key_dir):
     """Recursively walk `auth_dir`, loading YAML configuration files."""
     key_perms = {}
     fingerprints = get_key_fingerprints(key_dir)
-    for fname in glob.glob(os.path.join(auth_dir, '*.y*ml')):
-        with open(fname) as yml:
-            try:
-                data = yaml.safe_load(yml).items()
-            except (yaml.YAMLError, AttributeError):
-                logger.warning('Unable to read and parse %s', fname)
+    if not auth_dir.is_dir():
+        logger.warning('%s is not a directory', auth_dir)
+
+    for fname in auth_dir.glob('*.y*ml'):
+        try:
+            data = yaml.safe_load(fname.read_bytes()).items()
+        except OSError:
+            logger.warning('Unable to read %s', str(fname))
+            continue
+        except (yaml.YAMLError, AttributeError):
+            logger.warning('Unable to parse %s', str(fname))
+            continue
+
+        for group, keys in data:
+            if keys is None:
                 continue
 
-            for group, keys in data:
-                if keys is None:
+            for key in keys:
+                if key not in fingerprints:
+                    logger.info('Fingerprint not found for key %s', key)
                     continue
-
-                for key in keys:
-                    if key not in fingerprints:
-                        logger.info('Fingerprint not found for key %s', key)
-                        continue
-                    fingerprint = fingerprints[key]
-                    key_perms.setdefault(fingerprint, set()).add(group)
+                fingerprint = fingerprints[key]
+                key_perms.setdefault(fingerprint, set()).add(group)
     return key_perms
 
 
@@ -371,11 +379,13 @@ def parse_args(argv):
     )
     parser.add_argument(
         '--key-dir',
+        type=pathlib.Path,
         default='/etc/keyholder.d',
         help='directory with SSH keys'
     )
     parser.add_argument(
         '--auth-dir',
+        type=pathlib.Path,
         default='/etc/keyholder-auth.d',
         help='directory with YAML configuration files'
     )
