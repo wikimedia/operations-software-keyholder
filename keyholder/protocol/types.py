@@ -21,19 +21,18 @@ limitations under the License.
 
 # pylint: disable=invalid-name
 
-import enum
-from construct.core import AdaptationError, MappingError
-from construct import Adapter
 from construct import Byte, Flag, Int32ub, PascalString, BytesInteger
-from construct import Struct, FocusedSeq, Const
+from construct import GreedyBytes
+from construct import Struct, FocusedSeq
 from construct import Prefixed, Select, Rebuild, Terminated
 from construct import this
+from .compat import Const
 
 # RFC 4251 section 5
-SshBytes = PascalString(Int32ub)
+SshBytes = Prefixed(Int32ub, GreedyBytes)
 SshString = PascalString(Int32ub, 'utf8')
 SshMPInt = Select(
-    Const(Int32ub, 0),  # zero stored as zero bytes of data
+    Const(0, Int32ub),  # zero stored as zero bytes of data
     FocusedSeq(
         'num',
         'len' / Rebuild(Int32ub,
@@ -44,7 +43,7 @@ SshMPInt = Select(
 
 # RFC 4253 section 6.6
 SshRSAKeyBlob = Struct(
-    'algo' / Const(SshString, 'ssh-rsa'),
+    'algo' / Const('ssh-rsa', SshString),
     'e' / SshMPInt,
     'n' / SshMPInt,
     Terminated
@@ -52,7 +51,7 @@ SshRSAKeyBlob = Struct(
 
 # I-D.ietf-curdle-ssh-ed25519, section 4
 SshEd25519KeyBlob = Struct(
-    'algo' / Const(SshString, 'ssh-ed25519'),
+    'algo' / Const('ssh-ed25519', SshString),
     'public_key' / SshBytes,
     Terminated
 )
@@ -72,37 +71,12 @@ SshSignature = FocusedSeq(
 SSH_MSG_USERAUTH_REQUEST = 50
 SshRequestPublicKeySignature = Struct(
     'session' / SshBytes,
-    'type' / Const(Byte, SSH_MSG_USERAUTH_REQUEST),
+    'type' / Const(SSH_MSG_USERAUTH_REQUEST, Byte),
     'username' / SshString,
     'servicename' / SshString,
-    'method' / Const(SshString, 'publickey'),
-    'has_signature' / Const(Flag, True),
+    'method' / Const('publickey', SshString),
+    'has_signature' / Const(True, Flag),
     'algo' / SshString,
     'key_blob' / SshBytes,
     Terminated,
 )
-
-
-class PyEnum(Adapter):
-    """Adapt Python's Enum to its value.
-
-    Construct << 2.9 doesn't support mapping Python's Enums to Construct's
-    Enums, so add our own support for it.
-    """
-    def __init__(self, subcon, enum_class):
-        super().__init__(subcon)
-        if not issubclass(enum_class, enum.Enum):
-            raise AdaptationError('%r is not an enum.Enum' % enum_class)
-        self.enum_class = enum_class
-
-    def _decode(self, obj, context):
-        try:
-            return self.enum_class(obj)
-        except ValueError as exc:
-            raise MappingError(exc) from None
-
-    def _encode(self, obj, context):
-        try:
-            return obj.value
-        except AttributeError as exc:
-            raise MappingError(exc) from None
