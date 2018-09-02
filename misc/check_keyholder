@@ -1,7 +1,7 @@
 #!/bin/bash
 # Icinga plugin for keyholder
 
-export SSH_AUTH_SOCK="/run/keyholder/proxy.sock"
+export SSH_AUTH_SOCK="/run/keyholder/agent.sock"
 
 configured_keys() {
   # Get a sorted list of all key files in /etc/keyholder.d
@@ -16,7 +16,7 @@ active_keys() {
 }
 
 [ -S "$SSH_AUTH_SOCK" ] || {
-  echo "CRITICAL: Cannot connect to keyholder-proxy socket $SSH_AUTH_SOCK."
+  echo "CRITICAL: Cannot connect to keyholder socket $SSH_AUTH_SOCK."
   exit 2
 }
 
