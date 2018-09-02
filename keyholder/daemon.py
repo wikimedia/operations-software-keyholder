@@ -24,6 +24,7 @@
 import argparse
 import base64
 import collections
+import ctypes
 import glob
 import grp
 import hashlib
@@ -48,6 +49,8 @@ from construct.core import ConstructError
 
 # Defined in <socket.h>.
 SO_PEERCRED = 17
+MCL_CURRENT = 1
+MCL_FUTURE = 2
 
 logger = logging.getLogger('keyholder')  # pylint: disable=invalid-name
 
@@ -318,10 +321,34 @@ def setup_logging(debug):
         logger.addHandler(syslog_handler)
 
 
+def mlockall():
+    """Locks all of the process' pages into memory.
+
+    This avoids swapping potentially sensitive cryptographic material.
+    """
+    try:
+        libc = ctypes.CDLL('libc.so.6', use_errno=True)
+    except OSError:
+        # not a Linux system
+        return
+
+    flags = MCL_CURRENT | MCL_FUTURE
+    if libc.mlockall(flags) == 0:
+        logger.debug('Successfully locked memory')
+    else:
+        error = ctypes.get_errno()
+        try:
+            error = os.strerror(error)
+        except ValueError:
+            pass
+        logger.debug('Unable to lock memory: %s', error)
+
+
 def main(argv=sys.argv[1:]):
     """Main entry point; runs forever."""
     args = parse_args(argv)
     setup_logging(args.debug)
+    mlockall()
 
     perms = get_key_perms(args.auth_dir, args.key_dir)
     logger.info('Initialized and serving requests')
