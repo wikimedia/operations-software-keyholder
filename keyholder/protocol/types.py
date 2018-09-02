@@ -24,9 +24,45 @@ limitations under the License.
 import enum
 from construct.core import AdaptationError, MappingError
 from construct import Adapter
-from construct import Int32ub, PascalString
+from construct import Int32ub, PascalString, BytesInteger
+from construct import Struct, FocusedSeq, Const
+from construct import Prefixed, Select, Rebuild, Terminated
+from construct import this
 
 SshBytes = PascalString(Int32ub)
+SshString = PascalString(Int32ub, 'utf8')
+SshMPInt = Select(
+    Const(Int32ub, 0),  # zero stored as zero bytes of data
+    FocusedSeq(
+        'num',
+        'len' / Rebuild(Int32ub,
+                        lambda ctx: int(ctx.num.bit_length() // 8 + 1)),
+        'num' / BytesInteger(this.len, signed=True),
+    ),
+)
+
+SshRSAKeyBlob = Struct(
+    'algo' / Const(SshString, 'ssh-rsa'),
+    'e' / SshMPInt,
+    'n' / SshMPInt,
+    Terminated
+)
+
+SshEd25519KeyBlob = Struct(
+    'algo' / Const(SshString, 'ssh-ed25519'),
+    'public_key' / SshBytes,
+    Terminated
+)
+
+SshSignature = FocusedSeq(
+    'signature',
+    'signature' / Prefixed(Int32ub, Struct(
+        'key_type' / SshString,
+        'signature' / SshBytes,
+        Terminated
+    )),
+    Terminated
+)
 
 
 class PyEnum(Adapter):
