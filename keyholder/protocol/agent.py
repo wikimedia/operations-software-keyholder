@@ -27,10 +27,11 @@ limitations under the License.
 
 import enum
 from keyholder.protocol.types import PyEnum, SshBytes, SshString, SshMPInt
-from construct import Byte, Bytes, Int32ub
+from keyholder.protocol.types import SshSignature
+from construct import Byte, Int32ub
 from construct import GreedyBytes
 from construct import Struct, FocusedSeq
-from construct import Switch, Rebuild, If, Terminated
+from construct import Prefixed, Switch, Rebuild, Terminated
 from construct import this, len_
 
 
@@ -81,22 +82,6 @@ class SshAgentSignatureFlags(enum.Enum):
     AGENT_RSA_SHA2_256 = 2
     AGENT_RSA_SHA2_512 = 4
 
-
-# define and parse the size field separately in order to have a way to know how
-# many bytes to expect to read on the socket.
-SshAgentRequestHeader = Int32ub
-SshAgentRequest = Struct(
-    'size' / Rebuild(Int32ub, len_(this.message) + 1),
-    'code' / PyEnum(Byte, SshAgentRequestCode),
-    'message' / If(this.size > 1, Bytes(this.size - 1)),
-    Terminated
-)
-SshAgentResponse = Struct(
-    'size' / Rebuild(Int32ub, len_(this.message) + 1),
-    'code' / PyEnum(Byte, SshAgentResponseCode),
-    'message' / If(this.size > 1, Bytes(this.size - 1)),
-    Terminated
-)
 
 SshAgentIdentities = FocusedSeq(
     'keys',
@@ -151,5 +136,48 @@ SshAgentSignRequest = Struct(
 SshAgentLock = SshAgentUnlock = FocusedSeq(
     'passphrase',
     'passphrase' / SshBytes,
+    Terminated
+)
+
+# define and parse the size field separately in order to have a way to know how
+# many bytes to expect to read on the socket.
+SshAgentRequestHeader = Int32ub
+SshAgentRequest = FocusedSeq(
+    'request',
+    'request' / Prefixed(Int32ub, Struct(
+        'code' / PyEnum(Byte, SshAgentRequestCode),
+        'message' / Switch(
+            this.code, {
+                SshAgentRequestCode.REQUEST_IDENTITIES: Terminated,
+                SshAgentRequestCode.ADD_IDENTITY: SshAddIdentity,
+                SshAgentRequestCode.REMOVE_IDENTITY: SshRemoveIdentity,
+                SshAgentRequestCode.REMOVE_ALL_IDENTITIES: Terminated,
+                SshAgentRequestCode.SIGN_REQUEST: SshAgentSignRequest,
+                SshAgentRequestCode.LOCK: SshAgentLock,
+                SshAgentRequestCode.UNLOCK: SshAgentUnlock,
+            },
+            default=GreedyBytes
+        ),
+        Terminated
+    )),
+    Terminated
+)
+
+SshAgentResponse = FocusedSeq(
+    'response',
+    'response' / Prefixed(Int32ub, Struct(
+        'code' / PyEnum(Byte, SshAgentResponseCode),
+        'message' / Switch(
+            this.code, {
+                SshAgentResponseCode.FAILURE: Terminated,
+                SshAgentResponseCode.SUCCESS: Terminated,
+                SshAgentResponseCode.IDENTITIES_ANSWER: SshAgentIdentities,
+                SshAgentResponseCode.SIGN_RESPONSE: SshSignature,
+                SshAgentResponseCode.EXTENSION_FAILURE: Terminated,
+            },
+            default=GreedyBytes
+        ),
+        Terminated
+    )),
     Terminated
 )
