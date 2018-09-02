@@ -31,7 +31,7 @@ setuptools.setup(
     keywords=['ssh', 'agent'],
     install_requires=[
         'pyyaml',
-        'construct==2.8.16',
+        'construct>=2.8,<3',
         'pynacl>=1.0.1',
         'pycrypto>=2.6',
     ],
