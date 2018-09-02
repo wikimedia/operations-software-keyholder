@@ -17,6 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import os
 import hashlib
 import base64
 from keyholder.protocol.agent import SshAgentSignatureFlags
@@ -30,6 +31,54 @@ from Crypto.Signature import PKCS1_v1_5
 
 # for ed25519
 import nacl.signing
+
+
+class SshLock:
+    """An instance of a lock, with lock() and unlock() operations."""
+    def __init__(self):
+        self.salt = os.urandom(16)
+        self.iter = 100 * 1000
+        self.locked = None
+
+    def _pbkdf2(self, passphrase):
+        """Helper function to return the PBKDF2 of a passphrase."""
+        return hashlib.pbkdf2_hmac('sha256', passphrase, self.salt, self.iter)
+
+    def is_locked(self):
+        """Returns True if object is locked, False otherwise."""
+        return self.locked is not None
+
+    def lock(self, passphrase):
+        """Lock the object with passphrase.
+
+        Returns True if object was successfully locked.
+        Returns False if object was already locked.
+        """
+        if not self.is_locked():
+            self.locked = self._pbkdf2(passphrase)
+            return True
+        else:
+            return False
+
+    def unlock(self, passphrase):
+        """Unlock the object with passphrase.
+
+        Returns False if object was not already locked.
+        Returns False if passphrase did not match.
+        Returns True if object was successfully unlocked.
+        """
+        if not self.is_locked():
+            return False
+
+        attempted = self._pbkdf2(passphrase)
+        if attempted == self.locked:
+            self.locked = None
+            return True
+        else:
+            return False
+
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self.is_locked())
 
 
 class SshBaseKey:

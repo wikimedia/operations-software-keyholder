@@ -39,12 +39,13 @@ import subprocess
 import sys
 import yaml
 
-from keyholder.crypto import SshRSAKey, SshEd25519Key
+from keyholder.crypto import SshRSAKey, SshEd25519Key, SshLock
 from keyholder.protocol.agent import SshAgentRequest, SshAgentRequestHeader
 from keyholder.protocol.agent import SshAgentResponse, SshAgentResponseCode
 from keyholder.protocol.agent import SshAgentIdentities
 from keyholder.protocol.agent import SshAddIdentity, SshRemoveIdentity
 from keyholder.protocol.agent import SshAgentSignRequest
+from keyholder.protocol.agent import SshAgentLock, SshAgentUnlock
 from keyholder.protocol.types import SshRequestPublicKeySignature
 from construct.core import ConstructError
 
@@ -105,6 +106,7 @@ class SshAgentServer(socketserver.ThreadingUnixStreamServer):
         super().__init__(server_address, SshAgentHandler)
         self.keys = collections.OrderedDict()
         self.key_perms = key_perms
+        self.lock = SshLock()
 
     def handle_error(self, request, client_address):
         exc_type, exc_value = sys.exc_info()[:2]
@@ -162,6 +164,9 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
 
     def is_allowed(self, key_digest):
         """Returns True if self.user is allowed to operate on key_digest."""
+        if self.server.lock.is_locked():
+            return False
+
         if self.is_superuser():
             return True
 
@@ -306,6 +311,44 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
                               signature)
         else:
             logger.info('Refusing agent sign request for user %s', self.user)
+            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+
+    def handle_lock(self, message):
+        """Handle a lock agent command."""
+        if not self.is_superuser():
+            logger.info('User %s not allowed to lock the agent', self.user)
+            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+            return
+
+        try:
+            passphrase = SshAgentLock.parse(message)
+        except ConstructError:
+            raise SshAgentProtocolError('Invalid lock request')
+
+        if self.server.lock.lock(passphrase):
+            logger.info('Successfully locked the agent')
+            self.send_message(self.request, SshAgentResponseCode.SUCCESS)
+        else:
+            logger.info('Failed to lock the agent')
+            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+
+    def handle_unlock(self, message):
+        """Handle an unlock agent command."""
+        if not self.is_superuser():
+            logger.info('User %s not allowed to unlock the agent', self.user)
+            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+            return
+
+        try:
+            passphrase = SshAgentUnlock.parse(message)
+        except ConstructError:
+            raise SshAgentProtocolError('Invalid unlock request')
+
+        if self.server.lock.unlock(passphrase):
+            logger.info('Successfully unlocked the agent')
+            self.send_message(self.request, SshAgentResponseCode.SUCCESS)
+        else:
+            logger.info('Failed to unlock the agent')
             self.send_message(self.request, SshAgentResponseCode.FAILURE)
 
     def handle_not_implemented(self, code):
