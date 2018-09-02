@@ -1,10 +1,10 @@
 #!/bin/bash
-# keyholder -- Manage shared SSH agent
+# keyholder -- Manage multi-user SSH agent
 
 command=$1; shift
 
 show_usage() {
-  /bin/echo >&2 "keyholder -- Manage shared SSH agent
+  /bin/echo >&2 "keyholder -- Manage multi-user SSH agent
 
   keyholder status
     Lists service status and the fingerprints of all identities
