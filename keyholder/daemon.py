@@ -46,6 +46,7 @@ from keyholder.protocol.agent import SshAgentResponse, SshAgentResponseCode
 from keyholder.protocol.agent import SshAgentIdentities
 from keyholder.protocol.agent import SshAddIdentity, SshRemoveIdentity
 from keyholder.protocol.agent import SshAgentSignRequest
+from keyholder.protocol.types import SshRequestPublicKeySignature
 from construct.core import ConstructError
 
 # Defined in <socket.h>.
@@ -279,6 +280,15 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
             request = SshAgentSignRequest.parse(message)
         except ConstructError:
             raise SshAgentProtocolError('Invalid sign request received')
+
+        # verify that what we're about to sign is a valid signature request
+        # from a SSH_MSG_USERAUTH_REQUEST dialogue, and not random data. This
+        # is stricter than what OpenSSH's ssh-agent does, but sounds like a
+        # good idea nevertheless.
+        try:
+            SshRequestPublicKeySignature.parse(request.data)
+        except ConstructError:
+            raise SshAgentProtocolError('Invalid signature in sign request')
 
         key_digest = (b'SHA256:' + base64.b64encode(hashlib.sha256(
             request.key_blob).digest()).rstrip(b'=')).decode('utf-8')
