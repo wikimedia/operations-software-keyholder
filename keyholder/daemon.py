@@ -156,6 +156,22 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
         except ConstructError:
             raise SshAgentProtocolError('Cannot construct a valid message')
 
+    def is_superuser(self):
+        """Returns True if the requesting user is a superuser."""
+        return self.user == 'root'
+
+    def is_allowed(self, key_digest):
+        """Returns True if self.user is allowed to operate on key_digest."""
+        if self.is_superuser():
+            return True
+
+        allowed_groups = self.server.key_perms.get(key_digest, set())
+        return self.groups & allowed_groups
+
+    def setup(self):
+        """Retrieve the requesting user and their groups."""
+        self.user, self.groups = self.get_peer_credentials(self.request)
+
     def handle(self):
         """Handle client connections and process their commands."""
         while 1:
@@ -175,7 +191,10 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
             raise SshAgentProtocolError('Unexpected data')
 
         identities = []
-        for key in self.server.keys.values():
+        for fingerprint, key in self.server.keys.items():
+            if not self.is_allowed(fingerprint):
+                continue
+
             identities.append({
                 'key_blob': key.key_blob,
                 'comment': key.comment,
@@ -185,6 +204,11 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
 
     def handle_add_identity(self, message):
         """Handle the add identity command, adding a new key to the agent."""
+        if not self.is_superuser():
+            logger.info('User %s not allowed to add a key', self.user)
+            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+            return
+
         try:
             identity = SshAddIdentity.parse(message)
         except ConstructError:
@@ -213,6 +237,11 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
     def handle_remove_identity(self, message):
         """Handle the remove identity command, removing a key from the
         agent."""
+        if not self.is_superuser():
+            logger.info('User %s not allowed to remove keys', self.user)
+            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+            return
+
         try:
             identity = SshRemoveIdentity.parse(message)
         except ConstructError:
@@ -232,6 +261,11 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
     def handle_remove_all_identities(self, message):
         """Handle the remove all identities command, removing all keys from
         the agent."""
+        if not self.is_superuser():
+            logger.info('User %s not allowed to remove keys', self.user)
+            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+            return
+
         if message:
             raise SshAgentProtocolError('Unexpected data')
 
@@ -256,14 +290,13 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
             self.send_message(self.request, SshAgentResponseCode.FAILURE)
             return
 
-        user, groups = self.get_peer_credentials(self.request)
-        if groups & self.server.key_perms.get(key_digest, set()):
-            logger.info('Granting agent sign request for user %s', user)
+        if self.is_allowed(key_digest):
+            logger.info('Granting agent sign request for user %s', self.user)
             signature = key.sign(request.data, request.flags)
             self.send_message(self.request, SshAgentResponseCode.SIGN_RESPONSE,
                               signature)
         else:
-            logger.info('Refusing agent sign request for user %s', user)
+            logger.info('Refusing agent sign request for user %s', self.user)
             self.send_message(self.request, SshAgentResponseCode.FAILURE)
 
     def handle_not_implemented(self, code):
