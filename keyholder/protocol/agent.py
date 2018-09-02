@@ -30,7 +30,7 @@ from keyholder.protocol.types import PyEnum, SshBytes, SshString, SshMPInt
 from construct import Byte, Bytes, Int32ub
 from construct import GreedyBytes
 from construct import Struct, FocusedSeq
-from construct import Select, Switch, Rebuild, If, Terminated
+from construct import Switch, Rebuild, If, Terminated
 from construct import this, len_
 
 
@@ -84,13 +84,16 @@ class SshAgentSignatureFlags(enum.Enum):
 
 # define and parse the size field separately in order to have a way to know how
 # many bytes to expect to read on the socket.
-SshAgentCommandHeader = Int32ub
-SshAgentCommand = Struct(
-    'size' / Rebuild(SshAgentCommandHeader, len_(this.message) + 1),
-    'code' / Select(
-        PyEnum(Byte, SshAgentRequestCode),
-        PyEnum(Byte, SshAgentResponseCode),
-    ),
+SshAgentRequestHeader = Int32ub
+SshAgentRequest = Struct(
+    'size' / Rebuild(Int32ub, len_(this.message) + 1),
+    'code' / PyEnum(Byte, SshAgentRequestCode),
+    'message' / If(this.size > 1, Bytes(this.size - 1)),
+    Terminated
+)
+SshAgentResponse = Struct(
+    'size' / Rebuild(Int32ub, len_(this.message) + 1),
+    'code' / PyEnum(Byte, SshAgentResponseCode),
     'message' / If(this.size > 1, Bytes(this.size - 1)),
     Terminated
 )

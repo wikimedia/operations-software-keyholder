@@ -40,8 +40,8 @@ import sys
 import yaml
 
 from keyholder.crypto import SshRSAKey, SshEd25519Key
-from keyholder.protocol.agent import SshAgentResponseCode
-from keyholder.protocol.agent import SshAgentCommand, SshAgentCommandHeader
+from keyholder.protocol.agent import SshAgentRequest, SshAgentRequestHeader
+from keyholder.protocol.agent import SshAgentResponse, SshAgentResponseCode
 from keyholder.protocol.agent import SshAgentIdentities
 from keyholder.protocol.agent import SshAddIdentity, SshRemoveIdentity
 from keyholder.protocol.agent import SshAgentSignRequest
@@ -129,14 +129,14 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
     @staticmethod
     def recv_message(sock):
         """Read a message from a socket."""
-        head = sock.recv(SshAgentCommandHeader.sizeof(), socket.MSG_WAITALL)
-        if len(head) != SshAgentCommandHeader.sizeof():
+        head = sock.recv(SshAgentRequestHeader.sizeof(), socket.MSG_WAITALL)
+        if len(head) != SshAgentRequestHeader.sizeof():
             return None, b''
 
         try:
-            size = SshAgentCommandHeader.parse(head)
+            size = SshAgentRequestHeader.parse(head)
             tail = sock.recv(size, socket.MSG_WAITALL)
-            command = SshAgentCommand.parse(head + tail)
+            command = SshAgentRequest.parse(head + tail)
         except ConstructError:
             raise SshAgentProtocolError('Invalid message received')
 
@@ -146,7 +146,7 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
     def send_message(sock, code, message=b''):
         """Send a message on a socket."""
         try:
-            command = SshAgentCommand.build({
+            command = SshAgentResponse.build({
                 'code': code,
                 'message': message,
             })
