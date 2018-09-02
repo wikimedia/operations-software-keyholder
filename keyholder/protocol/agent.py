@@ -26,7 +26,8 @@ limitations under the License.
 # pylint: disable=invalid-name
 
 import enum
-from keyholder.protocol.types import PyEnum, SshBytes, SshString, SshMPInt
+from keyholder.protocol.compat import PyEnum
+from keyholder.protocol.types import SshBytes, SshString, SshMPInt
 from keyholder.protocol.types import SshSignature
 from construct import Byte, Int32ub
 from construct import GreedyBytes
@@ -36,7 +37,7 @@ from construct import this, len_
 
 
 @enum.unique
-class SshAgentRequestCode(enum.IntEnum):
+class SshAgentRequestCode(enum.Enum):
     """SSH Agent request codes."""
     V1_REQUEST_RSA_IDENTITIES = 1
     V1_RSA_CHALLENGE = 3
@@ -59,7 +60,7 @@ class SshAgentRequestCode(enum.IntEnum):
 
 
 @enum.unique
-class SshAgentResponseCode(enum.IntEnum):
+class SshAgentResponseCode(enum.Enum):
     """SSH Agent response codes."""
     V1_RSA_IDENTITIES_ANSWER = 2
     V1_RSA_RESPONSE = 4
