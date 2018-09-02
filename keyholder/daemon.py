@@ -46,12 +46,10 @@ from keyholder.protocol.agent import SshAddIdentity, SshRemoveIdentity
 from keyholder.protocol.agent import SshAgentSignRequest
 from construct.core import ConstructError
 
-logger = logging.getLogger('keyholder')
-
 # Defined in <socket.h>.
 SO_PEERCRED = 17
 
-s_ucred = struct.Struct('2Ii')
+logger = logging.getLogger('keyholder')  # pylint: disable=invalid-name
 
 
 class SshAgentProtocolError(OSError):
@@ -64,7 +62,7 @@ def get_key_fingerprints(key_dir):
     for fname in glob.glob(os.path.join(key_dir, '*.pub')):
         line = subprocess.check_output(
             ['/usr/bin/ssh-keygen', '-lf', fname], universal_newlines=True)
-        bits, fingerprint, note = line.split(' ', 2)
+        _, fingerprint, _ = line.split(' ', 2)
         keyfile = os.path.splitext(os.path.basename(fname))[0]
         keymap[keyfile] = fingerprint
     logger.info('Successfully loaded %d key(s)', len(keymap))
@@ -118,6 +116,7 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
     @staticmethod
     def get_peer_credentials(sock):
         """Return the user and group name of the peer of a UNIX socket."""
+        s_ucred = struct.Struct('2Ii')
         ucred = sock.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, s_ucred.size)
         _, uid, gid = s_ucred.unpack(ucred)
         user = pwd.getpwuid(uid).pw_name
