@@ -32,6 +32,8 @@ setuptools.setup(
     install_requires=[
         'pyyaml',
         'construct==2.8.16',
+        'pynacl>=1.0.1',
+        'pycrypto>=2.6',
     ],
     entry_points={
         'console_scripts': [

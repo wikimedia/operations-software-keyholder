@@ -26,10 +26,11 @@ limitations under the License.
 # pylint: disable=invalid-name
 
 import enum
-from keyholder.protocol.types import PyEnum, SshBytes
+from keyholder.protocol.types import PyEnum, SshBytes, SshString, SshMPInt
 from construct import Byte, Bytes, Int32ub
-from construct import Struct
-from construct import Select, Rebuild, If, Terminated
+from construct import GreedyBytes
+from construct import Struct, FocusedSeq
+from construct import Select, Switch, Rebuild, If, Terminated
 from construct import this, len_
 
 
@@ -91,6 +92,49 @@ SshAgentCommand = Struct(
         PyEnum(Byte, SshAgentResponseCode),
     ),
     'message' / If(this.size > 1, Bytes(this.size - 1)),
+    Terminated
+)
+
+SshAgentIdentities = FocusedSeq(
+    'keys',
+    'nkeys' / Rebuild(Int32ub, len_(this.keys)),
+    'keys' / Struct(
+        'key_blob' / SshBytes,
+        'comment' / SshString,
+    )[this.nkeys],
+    Terminated,
+)
+
+SshAddRSAKey = Struct(
+    'n' / SshMPInt,
+    'e' / SshMPInt,
+    'd' / SshMPInt,
+    'iqmp' / SshMPInt,
+    'p' / SshMPInt,
+    'q' / SshMPInt,
+    'comment' / SshString,
+)
+
+SshAddEd25519Key = Struct(
+    'enc_a' / SshBytes,
+    'k_enc_a' / SshBytes,
+    'comment' / SshString,
+)
+
+SshAddIdentity = Struct(
+    'key_type' / SshString,
+    'key' / Switch(
+        this.key_type, {
+            'ssh-ed25519': SshAddEd25519Key,
+            'ssh-rsa': SshAddRSAKey,
+        },
+        default=GreedyBytes,
+    ),
+    Terminated,
+)
+
+SshRemoveIdentity = Struct(
+    'key_blob' / SshBytes,
     Terminated
 )
 
