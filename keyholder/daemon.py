@@ -45,7 +45,7 @@ from keyholder.protocol.agent import SshAgentResponse, SshAgentResponseCode
 from keyholder.protocol.types import SshRequestPublicKeySignature
 from construct.core import ConstructError
 
-# Defined in <socket.h>.
+AGENT_MAX_LEN = 256*1024
 SO_PEERCRED = 17
 MCL_CURRENT = 1
 MCL_FUTURE = 2
@@ -107,11 +107,9 @@ class SshAgentServer(socketserver.ThreadingUnixStreamServer):
     def handle_error(self, request, client_address):
         exc_type, exc_value = sys.exc_info()[:2]
         logger.exception('Unhandled error: [%s] %s', exc_type, exc_value)
-        # respond to the client with an SSH_AGENT_FAILURE
-        SshAgentHandler.send_message(request, SshAgentResponseCode.FAILURE)
 
 
-class SshAgentHandler(socketserver.BaseRequestHandler):
+class SshAgentHandler(socketserver.StreamRequestHandler):
     """This class is responsible for handling an individual connection
     to an SshAgentServer."""
 
@@ -126,33 +124,44 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
         groups.update(g.gr_name for g in grp.getgrall() if user in g.gr_mem)
         return user, groups
 
-    @staticmethod
-    def recv_message(sock):
-        """Read a message from a socket."""
-        head = sock.recv(SshAgentRequestHeader.sizeof(), socket.MSG_WAITALL)
-        if len(head) != SshAgentRequestHeader.sizeof():
-            return None, b''
+    def recv_request(self):
+        """Receive and parse a request."""
+        size = SshAgentRequestHeader.sizeof()
+        head = self.rfile.read(size)
+        if len(head) != size:
+            raise EOFError
 
         try:
             size = SshAgentRequestHeader.parse(head)
-            tail = sock.recv(size, socket.MSG_WAITALL)
-            command = SshAgentRequest.parse(head + tail)
+            tail = self.rfile.read(size)
+            if len(tail) != size:
+                raise EOFError
+            if size > AGENT_MAX_LEN:
+                raise SshAgentProtocolError('Received message too big')
+            request = SshAgentRequest.parse(head + tail)
         except ConstructError:
             raise SshAgentProtocolError('Invalid message received')
 
-        return command.code, command.message
+        return request.code, request.message
 
-    @staticmethod
-    def send_message(sock, code, message=b''):
-        """Send a message on a socket."""
+    def send_response(self, code, message=b''):
+        """Build and send a response."""
         try:
             command = SshAgentResponse.build({
                 'code': code,
                 'message': message,
             })
-            sock.sendall(command)
         except ConstructError:
             raise SshAgentProtocolError('Cannot construct a valid message')
+
+        if len(command) > AGENT_MAX_LEN:
+            raise SshAgentProtocolError('Constructed message too big')
+
+        try:
+            self.wfile.write(command)
+            self.wfile.flush()
+        except (OSError, ValueError):
+            logger.info('Response write failed')
 
     def is_superuser(self):
         """Returns True if the requesting user is a superuser."""
@@ -171,20 +180,49 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
 
     def setup(self):
         """Retrieve the requesting user and their groups."""
+        super().setup()
         self.user, self.groups = self.get_peer_credentials(self.request)
 
     def handle(self):
-        """Handle client connections and process their commands."""
-        while 1:
-            code, message = self.recv_message(self.request)
-            if code is None:
-                return
+        """Handle client connections, potentially with multiple requests
+        each."""
+        while True:
+            try:
+                self.handle_one()
+            except EOFError:
+                break
 
-            method = getattr(self, 'handle_' + code.name.lower(), None)
+    def handle_one(self):
+        """Handle a single client request."""
+        # first, receive and decode the command
+        try:
+            code, message = self.recv_request()
+        except SshAgentProtocolError as exc:
+            logger.info('Invalid request received: %s', exc, exc_info=True)
+            return self.send_response(SshAgentResponseCode.FAILURE)
+
+        # then, route to the appropriate method, or handle_not_implemented
+        method = getattr(self, 'handle_' + code.name.lower(), None)
+        try:
             if method:
-                method(message)
+                response = method(message)
             else:
-                self.handle_not_implemented(code)
+                response = self.handle_not_implemented(code)
+        except SshAgentProtocolError as exc:
+            logger.info('Failure while processing: %s', exc, exc_info=True)
+            return self.send_response(SshAgentResponseCode.FAILURE)
+
+        # if a single code (e.g. SUCCESS or FAILURE) was returned, convert into
+        # a (code, message) response tuple, but with an empty message
+        if isinstance(response, SshAgentResponseCode):
+            response = (response,)  # pylint: disable=redefined-variable-type
+
+        # finally, build and send the appropriate response
+        try:
+            return self.send_response(*response)
+        except (SshAgentProtocolError, OSError) as exc:
+            logger.exception('Failure while building response: %s', exc)
+            return self.send_response(SshAgentResponseCode.FAILURE)
 
     def handle_request_identities(self, _):
         """Handle the request identities command, listing all identities."""
@@ -197,15 +235,13 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
                 'key_blob': key.key_blob,
                 'comment': key.comment,
             })
-        self.send_message(self.request, SshAgentResponseCode.IDENTITIES_ANSWER,
-                          identities)
+        return (SshAgentResponseCode.IDENTITIES_ANSWER, identities)
 
     def handle_add_identity(self, identity):
         """Handle the add identity command, adding a new key to the agent."""
         if not self.is_superuser():
             logger.info('User %s not allowed to add a key', self.user)
-            self.send_message(self.request, SshAgentResponseCode.FAILURE)
-            return
+            return SshAgentResponseCode.FAILURE
 
         try:
             # pylint: disable=redefined-variable-type
@@ -217,23 +253,21 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
                                     identity.key.comment)
             else:
                 logger.warning('Unsupported key type %s', identity.key_type)
-                self.send_message(self.request, SshAgentResponseCode.FAILURE)
-                return
+                return SshAgentResponseCode.FAILURE
         except TypeError:
             logger.warning('Cannot add key to agent, invalid key')
-            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+            return SshAgentResponseCode.FAILURE
         else:
             self.server.keys[key.fingerprint] = key
             logger.info('Successfully added key %s', key.comment)
-            self.send_message(self.request, SshAgentResponseCode.SUCCESS)
+            return SshAgentResponseCode.SUCCESS
 
     def handle_remove_identity(self, identity):
         """Handle the remove identity command, removing a key from the
         agent."""
         if not self.is_superuser():
             logger.info('User %s not allowed to remove keys', self.user)
-            self.send_message(self.request, SshAgentResponseCode.FAILURE)
-            return
+            return SshAgentResponseCode.FAILURE
 
         key_digest = (b'SHA256:' + base64.b64encode(hashlib.sha256(
             identity.key_blob).digest()).rstrip(b'=')).decode('utf-8')
@@ -242,21 +276,20 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
             comment = self.server.keys[key_digest].comment
             del self.server.keys[key_digest]
             logger.info('Successfully removed key %s', comment)
-            self.send_message(self.request, SshAgentResponseCode.SUCCESS)
+            return SshAgentResponseCode.SUCCESS
         except KeyError:
-            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+            return SshAgentResponseCode.FAILURE
 
     def handle_remove_all_identities(self, _):
         """Handle the remove all identities command, removing all keys from
         the agent."""
         if not self.is_superuser():
             logger.info('User %s not allowed to remove keys', self.user)
-            self.send_message(self.request, SshAgentResponseCode.FAILURE)
-            return
+            return SshAgentResponseCode.FAILURE
 
         self.server.keys.clear()
         logger.info('Removed all keys')
-        self.send_message(self.request, SshAgentResponseCode.SUCCESS)
+        return SshAgentResponseCode.SUCCESS
 
     def handle_sign_request(self, request):
         """Handle a sign request command."""
@@ -276,50 +309,47 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
             key = self.server.keys[key_digest]
         except KeyError:
             logger.info('Refusing agent sign request, key was not found')
-            self.send_message(self.request, SshAgentResponseCode.FAILURE)
-            return
+            return SshAgentResponseCode.FAILURE
 
         if self.is_allowed(key_digest):
             logger.info('Granting agent sign request for user %s', self.user)
             signature = key.sign(request.data, request.flags)
-            self.send_message(self.request, SshAgentResponseCode.SIGN_RESPONSE,
-                              signature)
+            return (SshAgentResponseCode.SIGN_RESPONSE, signature)
         else:
             logger.info('Refusing agent sign request for user %s', self.user)
-            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+            return SshAgentResponseCode.FAILURE
 
     def handle_lock(self, passphrase):
         """Handle a lock agent command."""
         if not self.is_superuser():
             logger.info('User %s not allowed to lock the agent', self.user)
-            self.send_message(self.request, SshAgentResponseCode.FAILURE)
-            return
+            return SshAgentResponseCode.FAILURE
 
         if self.server.lock.lock(passphrase):
             logger.info('Successfully locked the agent')
-            self.send_message(self.request, SshAgentResponseCode.SUCCESS)
+            return SshAgentResponseCode.SUCCESS
         else:
             logger.info('Failed to lock the agent')
-            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+            return SshAgentResponseCode.FAILURE
 
     def handle_unlock(self, passphrase):
         """Handle an unlock agent command."""
         if not self.is_superuser():
             logger.info('User %s not allowed to unlock the agent', self.user)
-            self.send_message(self.request, SshAgentResponseCode.FAILURE)
-            return
+            return SshAgentResponseCode.FAILURE
 
         if self.server.lock.unlock(passphrase):
             logger.info('Successfully unlocked the agent')
-            self.send_message(self.request, SshAgentResponseCode.SUCCESS)
+            return SshAgentResponseCode.SUCCESS
         else:
             logger.info('Failed to unlock the agent')
-            self.send_message(self.request, SshAgentResponseCode.FAILURE)
+            return SshAgentResponseCode.FAILURE
 
-    def handle_not_implemented(self, code):
+    @staticmethod
+    def handle_not_implemented(code):
         """Catch all for not implement commands."""
         logger.debug('Request type %s not implemented', code.name)
-        self.send_message(self.request, SshAgentResponseCode.FAILURE)
+        return SshAgentResponseCode.FAILURE
 
 
 def parse_args(argv):
