@@ -21,7 +21,6 @@ import os
 import hashlib
 import base64
 from keyholder.protocol.agent import SshAgentSignatureFlags
-from keyholder.protocol.types import SshSignature
 from keyholder.protocol.types import SshRSAKeyBlob, SshEd25519KeyBlob
 
 # for RSA
@@ -134,10 +133,10 @@ class SshRSAKey(SshBaseKey):
         signer = PKCS1_v1_5.new(self.private_key)
         signature = signer.sign(hsh)
 
-        return SshSignature.build({
+        return {
             'key_type': 'ssh-rsa',
             'signature': signature,
-        })
+        }
 
 
 class SshEd25519Key(SshBaseKey):
@@ -163,7 +162,7 @@ class SshEd25519Key(SshBaseKey):
 
     def sign(self, data, flags):
         signature = self.private_key.sign(data).signature
-        return SshSignature.build({
+        return {
             'key_type': 'ssh-ed25519',
             'signature': signature,
-        })
+        }

@@ -43,10 +43,6 @@ import yaml
 from keyholder.crypto import SshRSAKey, SshEd25519Key, SshLock
 from keyholder.protocol.agent import SshAgentRequest, SshAgentRequestHeader
 from keyholder.protocol.agent import SshAgentResponse, SshAgentResponseCode
-from keyholder.protocol.agent import SshAgentIdentities
-from keyholder.protocol.agent import SshAddIdentity, SshRemoveIdentity
-from keyholder.protocol.agent import SshAgentSignRequest
-from keyholder.protocol.agent import SshAgentLock, SshAgentUnlock
 from keyholder.protocol.types import SshRequestPublicKeySignature
 from construct.core import ConstructError
 
@@ -191,11 +187,8 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
             else:
                 self.handle_not_implemented(code)
 
-    def handle_request_identities(self, message):
+    def handle_request_identities(self, _):
         """Handle the request identities command, listing all identities."""
-        if message:
-            raise SshAgentProtocolError('Unexpected data')
-
         identities = []
         for fingerprint, key in self.server.keys.items():
             if not self.is_allowed(fingerprint):
@@ -206,19 +199,14 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
                 'comment': key.comment,
             })
         self.send_message(self.request, SshAgentResponseCode.IDENTITIES_ANSWER,
-                          SshAgentIdentities.build(identities))
+                          identities)
 
-    def handle_add_identity(self, message):
+    def handle_add_identity(self, identity):
         """Handle the add identity command, adding a new key to the agent."""
         if not self.is_superuser():
             logger.info('User %s not allowed to add a key', self.user)
             self.send_message(self.request, SshAgentResponseCode.FAILURE)
             return
-
-        try:
-            identity = SshAddIdentity.parse(message)
-        except ConstructError:
-            raise SshAgentProtocolError('Unable to parse identity')
 
         try:
             # pylint: disable=redefined-variable-type
@@ -240,18 +228,13 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
             logger.info('Successfully added key %s', key.comment)
             self.send_message(self.request, SshAgentResponseCode.SUCCESS)
 
-    def handle_remove_identity(self, message):
+    def handle_remove_identity(self, identity):
         """Handle the remove identity command, removing a key from the
         agent."""
         if not self.is_superuser():
             logger.info('User %s not allowed to remove keys', self.user)
             self.send_message(self.request, SshAgentResponseCode.FAILURE)
             return
-
-        try:
-            identity = SshRemoveIdentity.parse(message)
-        except ConstructError:
-            raise SshAgentProtocolError('Unable to parse identity')
 
         key_digest = (b'SHA256:' + base64.b64encode(hashlib.sha256(
             identity.key_blob).digest()).rstrip(b'=')).decode('utf-8')
@@ -264,7 +247,7 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
         except KeyError:
             self.send_message(self.request, SshAgentResponseCode.FAILURE)
 
-    def handle_remove_all_identities(self, message):
+    def handle_remove_all_identities(self, _):
         """Handle the remove all identities command, removing all keys from
         the agent."""
         if not self.is_superuser():
@@ -272,20 +255,12 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
             self.send_message(self.request, SshAgentResponseCode.FAILURE)
             return
 
-        if message:
-            raise SshAgentProtocolError('Unexpected data')
-
         self.server.keys.clear()
         logger.info('Removed all keys')
         self.send_message(self.request, SshAgentResponseCode.SUCCESS)
 
-    def handle_sign_request(self, message):
+    def handle_sign_request(self, request):
         """Handle a sign request command."""
-        try:
-            request = SshAgentSignRequest.parse(message)
-        except ConstructError:
-            raise SshAgentProtocolError('Invalid sign request received')
-
         # verify that what we're about to sign is a valid signature request
         # from a SSH_MSG_USERAUTH_REQUEST dialogue, and not random data. This
         # is stricter than what OpenSSH's ssh-agent does, but sounds like a
@@ -314,17 +289,12 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
             logger.info('Refusing agent sign request for user %s', self.user)
             self.send_message(self.request, SshAgentResponseCode.FAILURE)
 
-    def handle_lock(self, message):
+    def handle_lock(self, passphrase):
         """Handle a lock agent command."""
         if not self.is_superuser():
             logger.info('User %s not allowed to lock the agent', self.user)
             self.send_message(self.request, SshAgentResponseCode.FAILURE)
             return
-
-        try:
-            passphrase = SshAgentLock.parse(message)
-        except ConstructError:
-            raise SshAgentProtocolError('Invalid lock request')
 
         if self.server.lock.lock(passphrase):
             logger.info('Successfully locked the agent')
@@ -333,17 +303,12 @@ class SshAgentHandler(socketserver.BaseRequestHandler):
             logger.info('Failed to lock the agent')
             self.send_message(self.request, SshAgentResponseCode.FAILURE)
 
-    def handle_unlock(self, message):
+    def handle_unlock(self, passphrase):
         """Handle an unlock agent command."""
         if not self.is_superuser():
             logger.info('User %s not allowed to unlock the agent', self.user)
             self.send_message(self.request, SshAgentResponseCode.FAILURE)
             return
-
-        try:
-            passphrase = SshAgentUnlock.parse(message)
-        except ConstructError:
-            raise SshAgentProtocolError('Invalid unlock request')
 
         if self.server.lock.unlock(passphrase):
             logger.info('Successfully unlocked the agent')
