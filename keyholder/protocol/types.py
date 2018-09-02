@@ -1,7 +1,7 @@
 """
 Basic SSH protocol data types
 
-As defined in RFC 4251, section 5.
+As defined in RFCs 4251, 4252, 4253 etc.
 
 Copyright 2018 Wikimedia Foundation, Inc.
 Copyright 2018 Faidon Liambotis <faidon@wikimedia.org>
@@ -24,11 +24,12 @@ limitations under the License.
 import enum
 from construct.core import AdaptationError, MappingError
 from construct import Adapter
-from construct import Int32ub, PascalString, BytesInteger
+from construct import Byte, Flag, Int32ub, PascalString, BytesInteger
 from construct import Struct, FocusedSeq, Const
 from construct import Prefixed, Select, Rebuild, Terminated
 from construct import this
 
+# RFC 4251 section 5
 SshBytes = PascalString(Int32ub)
 SshString = PascalString(Int32ub, 'utf8')
 SshMPInt = Select(
@@ -41,6 +42,7 @@ SshMPInt = Select(
     ),
 )
 
+# RFC 4253 section 6.6
 SshRSAKeyBlob = Struct(
     'algo' / Const(SshString, 'ssh-rsa'),
     'e' / SshMPInt,
@@ -48,12 +50,14 @@ SshRSAKeyBlob = Struct(
     Terminated
 )
 
+# I-D.ietf-curdle-ssh-ed25519, section 4
 SshEd25519KeyBlob = Struct(
     'algo' / Const(SshString, 'ssh-ed25519'),
     'public_key' / SshBytes,
     Terminated
 )
 
+# RFC 4253 section 6.6
 SshSignature = FocusedSeq(
     'signature',
     'signature' / Prefixed(Int32ub, Struct(
@@ -62,6 +66,20 @@ SshSignature = FocusedSeq(
         Terminated
     )),
     Terminated
+)
+
+# RFC 4252, section 7
+SSH_MSG_USERAUTH_REQUEST = 50
+SshRequestPublicKeySignature = Struct(
+    'session' / SshBytes,
+    'type' / Const(Byte, SSH_MSG_USERAUTH_REQUEST),
+    'username' / SshString,
+    'servicename' / SshString,
+    'method' / Const(SshString, 'publickey'),
+    'has_signature' / Const(Flag, True),
+    'algo' / SshString,
+    'key_blob' / SshBytes,
+    Terminated,
 )
 
 
