@@ -147,3 +147,9 @@ SshAgentSignRequest = Struct(
     'flags' / PyEnum(Int32ub, SshAgentSignatureFlags),
     Terminated
 )
+
+SshAgentLock = SshAgentUnlock = FocusedSeq(
+    'passphrase',
+    'passphrase' / SshBytes,
+    Terminated
+)
