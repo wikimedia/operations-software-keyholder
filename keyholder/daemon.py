@@ -113,6 +113,13 @@ class SshAgentServer(socketserver.ThreadingUnixStreamServer):
         self.key_perms = key_perms
         self.lock = SshLock()
 
+    def server_close(self):
+        super().server_close()
+        # remove the stale socket that's left behind
+        sock = pathlib.Path(self.server_address)
+        if sock.is_socket():
+            sock.unlink()
+
     def handle_error(self, request, client_address):
         exc_type, exc_value = sys.exc_info()[:2]
         logger.exception('Unhandled error: [%s] %s', exc_type, exc_value)
