@@ -26,7 +26,6 @@ import base64
 import collections
 import ctypes
 import grp
-import hashlib
 import logging
 import logging.handlers
 import os
@@ -40,7 +39,7 @@ import sys
 
 import yaml
 
-from keyholder.crypto import SshRSAKey, SshEd25519Key, SshLock
+from keyholder.crypto import ssh_fingerprint, SshRSAKey, SshEd25519Key, SshLock
 from keyholder.protocol.agent import SshAgentRequest, SshAgentRequestHeader
 from keyholder.protocol.agent import SshAgentResponse, SshAgentResponseCode
 from keyholder.protocol.types import SshRequestPublicKeySignature
@@ -285,9 +284,7 @@ class SshAgentHandler(socketserver.StreamRequestHandler):
             logger.info('User %s not allowed to remove keys', self.user)
             return SshAgentResponseCode.FAILURE
 
-        key_digest = (b'SHA256:' + base64.b64encode(hashlib.sha256(
-            identity.key_blob).digest()).rstrip(b'=')).decode('utf-8')
-
+        key_digest = ssh_fingerprint(identity.key_blob)
         try:
             comment = self.server.keys[key_digest].comment
             del self.server.keys[key_digest]
@@ -318,9 +315,7 @@ class SshAgentHandler(socketserver.StreamRequestHandler):
         except ConstructError:
             raise SshAgentProtocolError('Invalid signature in sign request')
 
-        key_digest = (b'SHA256:' + base64.b64encode(hashlib.sha256(
-            request.key_blob).digest()).rstrip(b'=')).decode('utf-8')
-
+        key_digest = ssh_fingerprint(request.key_blob)
         try:
             key = self.server.keys[key_digest]
         except KeyError:
