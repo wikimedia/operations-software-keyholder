@@ -17,9 +17,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import os
-import hashlib
 import base64
+import binascii
+import hashlib
+import os
 from keyholder.protocol.agent import SshAgentSignatureFlags
 from keyholder.protocol.types import SshRSAKeyBlob, SshEd25519KeyBlob
 
@@ -30,6 +31,20 @@ from Crypto.Signature import PKCS1_v1_5
 
 # for ed25519
 import nacl.signing
+
+
+def ssh_fingerprint(blob, hash_type='sha256'):
+    """Returns the fingerprint of a key blob, in OpenSSH format."""
+    if hash_type == 'md5':
+        digest = hashlib.md5(blob).digest()
+        hexdigest = b':'.join([binascii.hexlify(bytes([b])) for b in digest])
+        return 'MD5:' + hexdigest.decode('ascii')
+    elif hash_type == 'sha256':
+        digest = hashlib.sha256(blob).digest()
+        b64 = base64.b64encode(digest)
+        return 'SHA256:' + b64.rstrip(b'=').decode('ascii')
+    else:
+        raise TypeError('Unrecognized fingerprint type %s' % hash_type)
 
 
 class SshLock:
@@ -84,15 +99,8 @@ class SshBaseKey:
     """Base class to represents an SSH key."""
     @property
     def fingerprint(self, hash_type='sha256'):
-        """Returns the fingerprint of the public key, in OpenSSH format."""
-        if hash_type == 'md5':
-            return hashlib.md5(self.key_blob).hexdigest()
-        elif hash_type == 'sha256':
-            sha256 = hashlib.sha256(self.key_blob).digest()
-            b64 = base64.b64encode(sha256)
-            return (b'SHA256:' + b64.rstrip(b'=')).decode('utf-8')
-        else:
-            raise TypeError('Unrecognized fingerprint type %s' % hash_type)
+        """Returns the fingerprint of the current public key."""
+        return ssh_fingerprint(self.key_blob, hash_type)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.fingerprint)
