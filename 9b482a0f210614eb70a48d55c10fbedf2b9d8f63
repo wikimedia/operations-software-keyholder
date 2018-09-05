@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "cd48189c_fbbae3a8",
+        "filename": "keyholder/daemon.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 101,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-09-05T23:20:50Z",
+      "side": 1,
+      "message": "Yeah, good point. Could use logger.exception, that a subsequent commits makes less noisy on non-DEBUG. I\u0027ll wait to hear your thoughts on that one first.",
+      "parentUuid": "556f9722_8ecc989b",
+      "revId": "9b482a0f210614eb70a48d55c10fbedf2b9d8f63",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
+    },
+    {
+      "key": {
         "uuid": "670b8d33_21fb9f8a",
         "filename": "keyholder/daemon.py",
         "patchSetId": 1
@@ -30,6 +48,24 @@
       "writtenOn": "2018-09-05T20:46:55Z",
       "side": 1,
       "message": "[nitpick, optional] From here downwards it could be all de-indented by one level, no need to be inside the \u0027with open()\u0027 anymore.\nAlso I would have put the call to items() here, but is totally an aesthetic preference ;)",
+      "revId": "9b482a0f210614eb70a48d55c10fbedf2b9d8f63",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "af49588d_8c4a2024",
+        "filename": "keyholder/daemon.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-09-05T23:20:50Z",
+      "side": 1,
+      "message": "You can\u0027t do both unindent and move .items, as safe_load can return None and NoneType doesn\u0027t have an items(), so .items() needs to be wrapped in a try/except.\n\nIe48f6655464e810589d9fb2ff61f028b039d2fbf is restructuring this piece of code much more actually (and de-indenting!), I could potentially fold these two commits together if that helps?",
+      "parentUuid": "670b8d33_21fb9f8a",
       "revId": "9b482a0f210614eb70a48d55c10fbedf2b9d8f63",
       "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
       "unresolved": true
