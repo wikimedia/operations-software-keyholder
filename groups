@@ -1,0 +1,3 @@
+# UUID                                   	Group Name
+#
+ldap:cn=ops,ou=groups,dc=wikimedia,dc=org	ldap/ops
