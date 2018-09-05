@@ -16,6 +16,24 @@
       "revId": "75d928d8fb0f1da969effe8359378ccb2c9e87ad",
       "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ce4556da_f3618164",
+        "filename": "ssh-agent-proxy",
+        "patchSetId": 1
+      },
+      "lineNbr": 282,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-09-05T23:15:17Z",
+      "side": 1,
+      "message": "That was actually my first implementation too, but unfortunately… that doesn\u0027t work with setup.py\u0027s console_scripts wrapper. Any ideas on how to fix that, or other other recommendations?",
+      "parentUuid": "f275656f_aa70381c",
+      "revId": "75d928d8fb0f1da969effe8359378ccb2c9e87ad",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
     }
   ]
 }
