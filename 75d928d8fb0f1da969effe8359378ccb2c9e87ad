@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "f275656f_aa70381c",
+        "filename": "ssh-agent-proxy",
+        "patchSetId": 1
+      },
+      "lineNbr": 282,
+      "author": {
+        "id": 3215
+      },
+      "writtenOn": "2018-09-05T20:29:15Z",
+      "side": 1,
+      "message": "Better avoid mutables as default values for function arguments ;)\nI\u0027d rather make argv here mandatory and just call it below on line 300 with:\n\n  main(sys.argv[1:])",
+      "revId": "75d928d8fb0f1da969effe8359378ccb2c9e87ad",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
+    }
+  ]
+}
