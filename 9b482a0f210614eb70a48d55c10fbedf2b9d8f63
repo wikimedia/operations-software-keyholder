@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "556f9722_8ecc989b",
+        "filename": "keyholder/daemon.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 101,
+      "author": {
+        "id": 3215
+      },
+      "writtenOn": "2018-09-05T20:46:55Z",
+      "side": 1,
+      "message": "[optional] would be nice to add \u0027: %s\u0027 with the exception to know what failed",
+      "revId": "9b482a0f210614eb70a48d55c10fbedf2b9d8f63",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "670b8d33_21fb9f8a",
+        "filename": "keyholder/daemon.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 104,
+      "author": {
+        "id": 3215
+      },
+      "writtenOn": "2018-09-05T20:46:55Z",
+      "side": 1,
+      "message": "[nitpick, optional] From here downwards it could be all de-indented by one level, no need to be inside the \u0027with open()\u0027 anymore.\nAlso I would have put the call to items() here, but is totally an aesthetic preference ;)",
+      "revId": "9b482a0f210614eb70a48d55c10fbedf2b9d8f63",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
+    }
+  ]
+}
