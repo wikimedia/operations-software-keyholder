@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "0c84b8b2_2e69caf2",
+        "filename": "keyholder/daemon.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 44,
+      "author": {
+        "id": 3215
+      },
+      "writtenOn": "2018-09-05T20:34:38Z",
+      "side": 1,
+      "message": "[nitpick, optional] Would be nice to have a new line in between stdlib and 3rd party imports",
+      "revId": "a8f0d9512e427d1cf34b2638d2139312a74cb4a1",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
+    }
+  ]
+}
