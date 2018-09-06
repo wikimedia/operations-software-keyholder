@@ -34,6 +34,24 @@
       "revId": "75d928d8fb0f1da969effe8359378ccb2c9e87ad",
       "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
       "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "09ff1c22_f60ba08a",
+        "filename": "ssh-agent-proxy",
+        "patchSetId": 1
+      },
+      "lineNbr": 282,
+      "author": {
+        "id": 3215
+      },
+      "writtenOn": "2018-09-06T06:35:57Z",
+      "side": 1,
+      "message": "True, I didn\u0027t notice the console_scripts until a later patch :) I this cases I\u0027d do like in spicerack:\n\n  def main(argv\u003dNone):\n      ...\n      args \u003d parse_args(argv)\n      ...\n\n  def parse_args(argv):\n      ...\n      return parser.parse_args(args)\n\n  # And no if __name__ block, as with the console script it\u0027s not needed\n\nAs the signature of ArgumentParser.parse_args(args\u003dNone, namespace\u003dNone) allows for it and the doc for \u0027args\u0027 says: \"The default is taken from sys.argv.\"\nLet argparse deal with the None basically ;)",
+      "parentUuid": "ce4556da_f3618164",
+      "revId": "75d928d8fb0f1da969effe8359378ccb2c9e87ad",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
     }
   ]
 }
