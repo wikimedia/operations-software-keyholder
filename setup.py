@@ -3,10 +3,12 @@
 
 import setuptools
 
+
 def readme():
     """Returns the contents of the README file"""
     with open('README.rst', 'r') as handle:
         return handle.read()
+
 
 setuptools.setup(
     name='keyholder',
@@ -37,9 +39,7 @@ setuptools.setup(
         'setuptools_scm',
         'pytest-runner>=2.0,<3dev',
     ],
-    tests_require=[
-        'pytest',
-    ],
+    tests_require=[line.strip() for line in open('test-requirements.txt')],
     zip_safe=False,
     use_scm_version=True,
 )
