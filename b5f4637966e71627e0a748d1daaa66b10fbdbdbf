@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "431dc5b3_77612bec",
+        "filename": "setup.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 42,
+      "author": {
+        "id": 24
+      },
+      "writtenOn": "2018-09-13T16:56:53Z",
+      "side": 1,
+      "message": "+1\n\nNote: test-requirements.txt is the convention for \u0027pip install -r\u0027  which is different than setuptools tests_require. Notably pip would accept extra command lines arguments and support comments.\n\nGiven test-requirements.txt just have the packages and no comments. That is good enough for now :]",
+      "revId": "b5f4637966e71627e0a748d1daaa66b10fbdbdbf",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d143694a_cdb46cbd",
+        "filename": "tox.ini",
+        "patchSetId": 1
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 24
+      },
+      "writtenOn": "2018-09-13T16:56:53Z",
+      "side": 1,
+      "message": "+1\n\nNote that usedevelop\u003dTrue skips sdist entirely.  Though it is usually not a problem.\n\nhttps://tox.readthedocs.io/en/latest/example/general.html#avoiding-expensive-sdist\n\nAt least it is faster this way when running tests locally.",
+      "revId": "b5f4637966e71627e0a748d1daaa66b10fbdbdbf",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "8d47d67c_9edf7ce7",
+        "filename": "tox.ini",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 24
+      },
+      "writtenOn": "2018-09-13T16:56:53Z",
+      "side": 1,
+      "message": "That files list flake8, but it is not needed for running the tests via \"python setup.py test\".\n\nWe can probably remove \"flake8\" from test-requirements and skip installing it.   Though it is not that important, it just that the venv have an extra dep that is not actually used.\n\nIn the end it does not really matter :]",
+      "revId": "b5f4637966e71627e0a748d1daaa66b10fbdbdbf",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    }
+  ]
+}
