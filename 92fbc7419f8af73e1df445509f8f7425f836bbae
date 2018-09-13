@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "16e0a7a9_aadac45c",
+        "filename": "keyholder/daemon.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 173,
+      "author": {
+        "id": 24
+      },
+      "writtenOn": "2018-09-13T17:02:29Z",
+      "side": 0,
+      "message": "An alternative is to errors out when SSH_AGENTC_ADD_SMARTCARD_KEY_CONSTRAINED is received stating \"ssh v1 not support\".\n\nElse you get a cryptic:\n\n Unknown request code 1, refusing\n\nBut it does not matter in practice since nobody uses ssh v1 anymore.",
+      "revId": "92fbc7419f8af73e1df445509f8f7425f836bbae",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    }
+  ]
+}
