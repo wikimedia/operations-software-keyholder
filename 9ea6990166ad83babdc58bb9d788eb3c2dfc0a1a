@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3f6cf154_c50a3667",
+        "filename": "keyholder/daemon.py",
+        "patchSetId": 2
+      },
+      "lineNbr": 25,
+      "author": {
+        "id": 24
+      },
+      "writtenOn": "2018-09-20T12:27:51Z",
+      "side": 1,
+      "message": "flake8:\n\n F401 \u0027base64\u0027 imported but unused",
+      "revId": "9ea6990166ad83babdc58bb9d788eb3c2dfc0a1a",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    }
+  ]
+}
