@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "1d266b9b_d8dfb1f0",
+        "filename": "keyholder/daemon.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-10-24T23:48:58Z",
+      "side": 1,
+      "message": "Good point too! Like in the other comment, I\u0027d prefer to do this with a follow-up patch at the end if that\u0027s OK with you.",
+      "parentUuid": "2960e7db_9d71be33",
+      "revId": "ae539eff9e84045cd199461ce05f5040781d0994",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "772400b5_00216ee1",
         "filename": "keyholder/daemon.py",
         "patchSetId": 3
@@ -53,6 +71,24 @@
     },
     {
       "key": {
+        "uuid": "f22d4884_b9ea4ab1",
+        "filename": "keyholder/protocol/agent.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-10-24T23:48:58Z",
+      "side": 1,
+      "message": "Good idea! I\u0027ve been meaning to pass all of the source through \"black\", but haven\u0027t found the time.\n\nIf you don\u0027t mind I\u0027d prefer to do this with a follow-up patch at the end of the series, though, as these are touched by other patches in the series and this would create merge/rebase conflicts...",
+      "parentUuid": "cf1dea1f_0c6643ca",
+      "revId": "ae539eff9e84045cd199461ce05f5040781d0994",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "f3905401_c3081366",
         "filename": "setup.py",
         "patchSetId": 3
@@ -64,6 +100,24 @@
       "writtenOn": "2018-10-24T23:41:23Z",
       "side": 1,
       "message": "\u003e It is not considered best practice to use install_requires to pin dependencies to specific versions[...]. This is overly-restrictive, and prevents the user from gaining the benefit of dependency upgrades.\n\nhttps://packaging.python.org/discussions/install-requires-vs-requirements/",
+      "revId": "ae539eff9e84045cd199461ce05f5040781d0994",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "9b7859ee_72d45b94",
+        "filename": "setup.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-10-24T23:48:58Z",
+      "side": 1,
+      "message": "Unfortunately Construct breaks the API even in minor releases :( See https://gerrit.wikimedia.org/r/#/c/operations/software/keyholder/+/458245/ where I expanded this to be a bit looser, at the expense of adding compatibility code.",
+      "parentUuid": "f3905401_c3081366",
       "revId": "ae539eff9e84045cd199461ce05f5040781d0994",
       "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
       "unresolved": false
