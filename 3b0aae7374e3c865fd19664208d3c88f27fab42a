@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "7a321772_b83baa29",
+        "filename": "bin/keyholder",
+        "patchSetId": 3
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-10-25T23:39:28Z",
+      "side": 1,
+      "message": "Nice find. Fixed!",
+      "parentUuid": "da28c7fd_3b3bf8e3",
+      "revId": "3b0aae7374e3c865fd19664208d3c88f27fab42a",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "e34dc096_e9dbaa85",
         "filename": "bin/keyholder",
         "patchSetId": 3
@@ -30,6 +48,24 @@
       "writtenOn": "2018-10-25T23:06:18Z",
       "side": 1,
       "message": "\"done\" no longer needed here",
+      "revId": "3b0aae7374e3c865fd19664208d3c88f27fab42a",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "2499022a_d73c58e0",
+        "filename": "bin/keyholder",
+        "patchSetId": 3
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-10-25T23:39:28Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "e34dc096_e9dbaa85",
       "revId": "3b0aae7374e3c865fd19664208d3c88f27fab42a",
       "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
       "unresolved": false
