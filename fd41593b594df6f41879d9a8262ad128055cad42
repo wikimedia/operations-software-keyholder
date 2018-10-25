@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "6ac60dad_5ed0fcf9",
+        "filename": "keyholder/daemon.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 219,
+      "author": {
+        "id": 2321
+      },
+      "writtenOn": "2018-10-25T21:56:43Z",
+      "side": 1,
+      "message": "FWIW, this description also exists in `setup.py`",
+      "revId": "fd41593b594df6f41879d9a8262ad128055cad42",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    }
+  ]
+}
