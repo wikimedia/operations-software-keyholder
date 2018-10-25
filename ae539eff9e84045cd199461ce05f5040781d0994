@@ -89,6 +89,24 @@
     },
     {
       "key": {
+        "uuid": "6571163e_e04edcbc",
+        "filename": "keyholder/protocol/agent.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 29,
+      "author": {
+        "id": 2321
+      },
+      "writtenOn": "2018-10-25T21:44:50Z",
+      "side": 1,
+      "message": "\u003e If you don\u0027t mind I\u0027d prefer to do this with a follow-up patch at\n \u003e the end of the series, though, as these are touched by other\n \u003e patches in the series and this would create merge/rebase\n \u003e conflicts...\n\nSure.",
+      "parentUuid": "f22d4884_b9ea4ab1",
+      "revId": "ae539eff9e84045cd199461ce05f5040781d0994",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "f3905401_c3081366",
         "filename": "setup.py",
         "patchSetId": 3
@@ -118,6 +136,24 @@
       "side": 1,
       "message": "Unfortunately Construct breaks the API even in minor releases :( See https://gerrit.wikimedia.org/r/#/c/operations/software/keyholder/+/458245/ where I expanded this to be a bit looser, at the expense of adding compatibility code.",
       "parentUuid": "f3905401_c3081366",
+      "revId": "ae539eff9e84045cd199461ce05f5040781d0994",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ec87450c_45fac002",
+        "filename": "setup.py",
+        "patchSetId": 3
+      },
+      "lineNbr": 34,
+      "author": {
+        "id": 2321
+      },
+      "writtenOn": "2018-10-25T21:44:50Z",
+      "side": 1,
+      "message": "\u003e Unfortunately Construct breaks the API even in minor releases :(\n\nOh good.\n\n \u003e See https://gerrit.wikimedia.org/r/#/c/operations/software/keyholder/+/458245/\n \u003e where I expanded this to be a bit looser, at the expense of adding\n \u003e compatibility code.\n\nAh, nice. That works for me.",
+      "parentUuid": "9b7859ee_72d45b94",
       "revId": "ae539eff9e84045cd199461ce05f5040781d0994",
       "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
       "unresolved": false
