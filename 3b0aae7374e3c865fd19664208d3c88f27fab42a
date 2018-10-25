@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "da28c7fd_3b3bf8e3",
+        "filename": "bin/keyholder",
+        "patchSetId": 3
+      },
+      "lineNbr": 60,
+      "author": {
+        "id": 2321
+      },
+      "writtenOn": "2018-10-25T23:06:18Z",
+      "side": 1,
+      "message": "continue: only meaningful in a `for\u0027, `while\u0027, or `until\u0027 loop\n\nHadn\u0027t noticed this in the old keyholder script! If we want to stop execution here we could exit. If not, we can just drop `|| continue` since we don\u0027t have `set -e`",
+      "revId": "3b0aae7374e3c865fd19664208d3c88f27fab42a",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e34dc096_e9dbaa85",
+        "filename": "bin/keyholder",
+        "patchSetId": 3
+      },
+      "lineNbr": 62,
+      "author": {
+        "id": 2321
+      },
+      "writtenOn": "2018-10-25T23:06:18Z",
+      "side": 1,
+      "message": "\"done\" no longer needed here",
+      "revId": "3b0aae7374e3c865fd19664208d3c88f27fab42a",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    }
+  ]
+}
