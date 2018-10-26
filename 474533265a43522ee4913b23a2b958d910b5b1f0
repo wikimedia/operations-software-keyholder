@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "4323fe2f_d2d1966d",
+        "filename": "keyholder/daemon.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 195,
+      "author": {
+        "id": 2321
+      },
+      "writtenOn": "2018-10-26T18:54:11Z",
+      "side": 1,
+      "message": "I think this is going to make keyholder harder to troubleshoot for non-roots and folks who have root alike ( unless they are in the habit of working as \"root\" on a server rather than using sudo).\n\nThat is, an SRE (who has root) attempting to troubleshoot a problem with keyholder may forget about this, run \"SSH_AUTH_SOCK\u003d/run/keyholder/agent.sock ssh-add -l\" without sudo, see only the key for the service they typically deploy, and spend time troubleshooting the wrong thing, i.e., trying to re-arm an already armed keyholder.\n\nThis also makes it harder for me to help folks with keyholder without root.\n\nCurrently, it seems, our nagios check runs sudo check_keyholder. I\u0027m not sure that nagios needs to use sudo to run check_keyholder curently, but it will definitely need to after this change.",
+      "revId": "474533265a43522ee4913b23a2b958d910b5b1f0",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    }
+  ]
+}
