@@ -16,6 +16,24 @@
       "revId": "474533265a43522ee4913b23a2b958d910b5b1f0",
       "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "81279ca2_952188ec",
+        "filename": "keyholder/daemon.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 195,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-10-26T20:24:40Z",
+      "side": 1,
+      "message": "I hear you and your concerns are definitely valid. I think it\u0027s the right thing to do, though.\n\nThe first reason is that IIRC OpenSSH\u0027s ssh command actually lists identities first, and then attempts to connect with each one of them, fails, and falls back to the next; having the list of identities accurately describe which ones one can use will make the SSH negotiation more useful and quicker. I don\u0027t recall all the details, and IdentitiesOnly in ssh_config affects this as well IIRC. Note that other implementations can be even more puzzling or plain buggy, see e.g. https://phabricator.wikimedia.org/T205898#4685726 for a recent gotcha.\n\nThe second reason is that I think this will actually *help* with troubleshooting; a user will now be able to see for themselves whether they have access or if there\u0027s a typo in the config, and roots will be able to \"sudo -u $user\" to see for themselves as well. IOW, this provides for a way one can see what effect the ACLs have on them and is currently the only way.\n\nAll that said, I\u0027m really not in love with the assumption the code makes now that \"root\" is the superuser. This was supposed to be temporary. The way I envision this is that a particular group (or groups) will have superuser access and will be able to perform the privileged operations of arming/disarming/locking/listing identities (but of course, not extract keys from the agent). This idea is currently blocked on config file(s) improvements/restructuring, as the existing config doesn\u0027t have a structure or sections, so we can\u0027t add it in. (I briefly considered something like inventing a special key name like \":superuser:\" that keyholder would treat like that, but felt it was too hacky). \nWould love to hear your thoughts on this.",
+      "parentUuid": "4323fe2f_d2d1966d",
+      "revId": "474533265a43522ee4913b23a2b958d910b5b1f0",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
     }
   ]
 }
