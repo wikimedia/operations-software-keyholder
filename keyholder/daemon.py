@@ -32,6 +32,7 @@ import logging.handlers
 import os
 import pathlib
 import pwd
+import signal
 import socket
 import socketserver
 import struct
@@ -57,61 +58,79 @@ class SshAgentProtocolError(OSError):
     """Custom exception class for protocol errors."""
 
 
-def get_key_fingerprints(key_dir):
-    """Look up the key fingerprints for all keys held by keyholder"""
-    keymap = {}
-    if not key_dir.is_dir():
-        logger.warning('%s is not a directory', key_dir)
+class SshAgentConfig:
+    """Loads and reloads the agent's configuration."""
 
-    for fname in key_dir.glob('*.pub'):
-        _, key_blob64, _ = fname.read_bytes().split()
-        try:
-            key_blob = base64.b64decode(key_blob64, validate=True)
-        except (ValueError, binascii.Error) as exc:
-            logger.warning('Could not parse key %s: %s', fname, exc)
-            continue
-        keymap[fname.stem] = ssh_fingerprint(key_blob)
-    logger.info('Successfully loaded %d key(s)', len(keymap))
-    return keymap
+    def __init__(self, auth_dir, key_dir):
+        self.auth_dir = auth_dir
+        self.key_dir = key_dir
+        self.reload()
 
+    def reload(self):
+        """Load or reload the configuration."""
+        self.perms = self.get_key_perms(self.auth_dir, self.key_dir)
 
-def get_key_perms(auth_dir, key_dir):
-    """Recursively walk `auth_dir`, loading YAML configuration files."""
-    key_perms = {}
-    fingerprints = get_key_fingerprints(key_dir)
-    if not auth_dir.is_dir():
-        logger.warning('%s is not a directory', auth_dir)
+    def sighandle(self, signum, frame):
+        """Called as a signal handler; calls reload."""
+        logger.info('Caught %s, reloading', signal.Signals(signum).name)
+        self.reload()
 
-    for fname in auth_dir.glob('*.y*ml'):
-        try:
-            data = yaml.safe_load(fname.read_bytes()).items()
-        except OSError as exc:
-            logger.warning('Unable to read %s: %s', fname, exc)
-            continue
-        except (yaml.YAMLError, AttributeError) as exc:
-            logger.warning('Unable to parse %s: %s', fname, exc)
-            continue
+    @classmethod
+    def get_key_fingerprints(cls, key_dir):
+        """Look up the key fingerprints for all keys held by keyholder"""
+        keymap = {}
+        if not key_dir.is_dir():
+            logger.warning('%s is not a directory', key_dir)
 
-        for group, keys in data:
-            if keys is None:
+        for fname in key_dir.glob('*.pub'):
+            _, key_blob64, _ = fname.read_bytes().split()
+            try:
+                key_blob = base64.b64decode(key_blob64, validate=True)
+            except (ValueError, binascii.Error) as exc:
+                logger.warning('Could not parse key %s: %s', fname, exc)
+                continue
+            keymap[fname.stem] = ssh_fingerprint(key_blob)
+        logger.info('Successfully loaded %d key(s)', len(keymap))
+        return keymap
+
+    @classmethod
+    def get_key_perms(cls, auth_dir, key_dir):
+        """Recursively walk `auth_dir`, loading YAML configuration files."""
+        key_perms = {}
+        fingerprints = cls.get_key_fingerprints(key_dir)
+        if not auth_dir.is_dir():
+            logger.warning('%s is not a directory', auth_dir)
+
+        for fname in auth_dir.glob('*.y*ml'):
+            try:
+                data = yaml.safe_load(fname.read_bytes()).items()
+            except OSError as exc:
+                logger.warning('Unable to read %s: %s', fname, exc)
+                continue
+            except (yaml.YAMLError, AttributeError) as exc:
+                logger.warning('Unable to parse %s: %s', fname, exc)
                 continue
 
-            for key in keys:
-                if key not in fingerprints:
-                    logger.info('Fingerprint not found for key %s', key)
+            for group, keys in data:
+                if keys is None:
                     continue
-                fingerprint = fingerprints[key]
-                key_perms.setdefault(fingerprint, set()).add(group)
-    return key_perms
+
+                for key in keys:
+                    if key not in fingerprints:
+                        logger.info('Fingerprint not found for key %s', key)
+                        continue
+                    fingerprint = fingerprints[key]
+                    key_perms.setdefault(fingerprint, set()).add(group)
+        return key_perms
 
 
 class SshAgentServer(socketserver.ThreadingUnixStreamServer):
     """A threaded server that listens on a UNIX domain socket."""
 
-    def __init__(self, server_address, key_perms):
+    def __init__(self, server_address, config):
         super().__init__(server_address, SshAgentHandler)
         self.keys = collections.OrderedDict()
-        self.key_perms = key_perms
+        self.config = config
         self.lock = SshLock()
 
     def server_close(self):
@@ -192,7 +211,7 @@ class SshAgentHandler(socketserver.StreamRequestHandler):
         if self.is_superuser():
             return True
 
-        allowed_groups = self.server.key_perms.get(key_digest, set())
+        allowed_groups = self.server.config.perms.get(key_digest, set())
         return self.groups & allowed_groups
 
     def setup(self):
@@ -446,10 +465,11 @@ def main(argv=None):
     setup_logging(args.debug)
     mlockall()
 
-    perms = get_key_perms(args.auth_dir, args.key_dir)
+    config = SshAgentConfig(args.auth_dir, args.key_dir)
+    signal.signal(signal.SIGHUP, config.sighandle)
     logger.info('Initialized and serving requests')
 
-    server = SshAgentServer(args.bind, perms)
+    server = SshAgentServer(args.bind, config)
 
     try:
         server.serve_forever()
