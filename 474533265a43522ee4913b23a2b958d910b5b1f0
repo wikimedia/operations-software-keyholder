@@ -34,6 +34,24 @@
       "revId": "474533265a43522ee4913b23a2b958d910b5b1f0",
       "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "b0f6db87_33efb80b",
+        "filename": "keyholder/daemon.py",
+        "patchSetId": 4
+      },
+      "lineNbr": 195,
+      "author": {
+        "id": 2321
+      },
+      "writtenOn": "2018-10-29T16:56:43Z",
+      "side": 1,
+      "message": "\u003e The first reason is that IIRC OpenSSH\u0027s ssh command actually lists\n \u003e identities first, and then attempts to connect with each one of\n \u003e them, fails, and falls back to the next; having the list of\n \u003e identities accurately describe which ones one can use will make the\n \u003e SSH negotiation more useful and quicker. I don\u0027t recall all the\n \u003e details, and IdentitiesOnly in ssh_config affects this as well\n \u003e IIRC. Note that other implementations can be even more puzzling or\n \u003e plain buggy, see e.g. https://phabricator.wikimedia.org/T205898#4685726\n \u003e for a recent gotcha.\n\nYeah, that is a fairly compelling argument. Scap has an IdentitiesOnly work around that was needed once we had more than 8 keys (IIRC that\u0027s the default) in keyholder which was a bit of a pain until the new scap version was released.\n\n \u003e The second reason is that I think this will actually *help* with\n \u003e troubleshooting; a user will now be able to see for themselves\n \u003e whether they have access or if there\u0027s a typo in the config, and\n \u003e roots will be able to \"sudo -u $user\" to see for themselves as\n \u003e well. IOW, this provides for a way one can see what effect the ACLs\n \u003e have on them and is currently the only way.\n\nThis is seemingly a bit of a double-edged sword in terms of troubleshooting. I can see how it could be useful.\n\n \u003e \n \u003e All that said, I\u0027m really not in love with the assumption the code\n \u003e makes now that \"root\" is the superuser. This was supposed to be\n \u003e temporary. The way I envision this is that a particular group (or\n \u003e groups) will have superuser access and will be able to perform the\n \u003e privileged operations of arming/disarming/locking/listing\n \u003e identities (but of course, not extract keys from the agent). This\n \u003e idea is currently blocked on config file(s) improvements/restructuring,\n \u003e as the existing config doesn\u0027t have a structure or sections, so we\n \u003e can\u0027t add it in. (I briefly considered something like inventing a\n \u003e special key name like \":superuser:\" that keyholder would treat like\n \u003e that, but felt it was too hacky).\n \u003e Would love to hear your thoughts on this.\n\n+1 would be great to have a real configuration file.",
+      "parentUuid": "81279ca2_952188ec",
+      "revId": "474533265a43522ee4913b23a2b958d910b5b1f0",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
     }
   ]
 }
