@@ -83,8 +83,8 @@ class SshAgentConfig:
             logger.warning('%s is not a directory', key_dir)
 
         for fname in key_dir.glob('*.pub'):
-            _, key_blob64, _ = fname.read_bytes().split()
             try:
+                _, key_blob64, _ = fname.read_bytes().split()
                 key_blob = base64.b64decode(key_blob64, validate=True)
             except (ValueError, binascii.Error) as exc:
                 logger.warning('Could not parse key %s: %s', fname, exc)
