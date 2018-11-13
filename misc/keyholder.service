@@ -1,0 +1,12 @@
+[Unit]
+Description=keyholderd -- multi-user SSH agent
+After=network.target
+
+[Service]
+User=keyholder
+Group=keyholder-users
+UMask=157
+ExecStartPre=/bin/rm -f /run/keyholder/agent.sock
+ExecStart=/usr/local/bin/keyholderd
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/rm -f /run/keyholder/agent.sock
