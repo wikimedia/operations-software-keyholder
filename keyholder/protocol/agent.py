@@ -26,14 +26,28 @@ limitations under the License.
 # pylint: disable=invalid-name
 
 import enum
+
+from construct import (
+    Byte,
+    Int32ub,
+    GreedyBytes,
+    Struct,
+    FocusedSeq,
+    Prefixed,
+    Switch,
+    Rebuild,
+    Terminated,
+    this,
+    len_
+)
+
 from keyholder.protocol.compat import PyEnum
-from keyholder.protocol.types import SshBytes, SshString, SshMPInt
-from keyholder.protocol.types import SshSignature
-from construct import Byte, Int32ub
-from construct import GreedyBytes
-from construct import Struct, FocusedSeq
-from construct import Prefixed, Switch, Rebuild, Terminated
-from construct import this, len_
+from keyholder.protocol.types import (
+    SshBytes,
+    SshString,
+    SshMPInt,
+    SshSignature
+)
 
 
 @enum.unique

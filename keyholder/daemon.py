@@ -41,8 +41,12 @@ import sys
 import yaml
 
 from keyholder.crypto import ssh_fingerprint, SshRSAKey, SshEd25519Key, SshLock
-from keyholder.protocol.agent import SshAgentRequest, SshAgentRequestHeader
-from keyholder.protocol.agent import SshAgentResponse, SshAgentResponseCode
+from keyholder.protocol.agent import (
+    SshAgentRequest,
+    SshAgentRequestHeader,
+    SshAgentResponse,
+    SshAgentResponseCode
+)
 from keyholder.protocol.types import SshRequestPublicKeySignature
 from construct.core import ConstructError
 

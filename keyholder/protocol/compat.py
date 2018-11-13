@@ -18,8 +18,13 @@ limitations under the License.
 """
 
 import enum
-from construct import Adapter, MappingError, AdaptationError
-from construct import Const as ConstructConst
+
+from construct import (
+    Adapter,
+    MappingError,
+    AdaptationError,
+    Const as ConstructConst
+)
 from construct.version import version as CONSTRUCT_VERSION
 
 

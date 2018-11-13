@@ -21,11 +21,22 @@ limitations under the License.
 
 # pylint: disable=invalid-name
 
-from construct import Byte, Flag, Int32ub, PascalString, BytesInteger
-from construct import GreedyBytes
-from construct import Struct, FocusedSeq
-from construct import Prefixed, Select, Rebuild, Terminated
-from construct import this
+from construct import (
+    Byte,
+    Flag,
+    Int32ub,
+    PascalString,
+    BytesInteger,
+    GreedyBytes,
+    Struct,
+    FocusedSeq,
+    Prefixed,
+    Select,
+    Rebuild,
+    Terminated,
+    this
+)
+
 from .compat import Const
 
 # RFC 4251 section 5
