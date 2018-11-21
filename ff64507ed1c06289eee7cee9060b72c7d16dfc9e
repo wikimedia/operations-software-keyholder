@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "9a6d727e_63d932d6",
+        "filename": "misc/keyholder.service",
+        "patchSetId": 1
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-11-21T14:57:32Z",
+      "side": 1,
+      "message": "I think we need at least RuntimeDirectory\u003d to create /run/keyholder/\n\nWould be also good to define some hardening options, e.g. (untested):\n\n NoNewPrivileges\u003dyes\n PrivateTmp\u003dyes\n ProtectSystem\u003dstrict\n ProtectHome\u003dyes\n ProtectKernelTunables\u003dyes\n ProtectControlGroups\u003dyes",
+      "revId": "ff64507ed1c06289eee7cee9060b72c7d16dfc9e",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7d20a182_1b74e8db",
+        "filename": "misc/keyholder.service",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-11-21T14:57:32Z",
+      "side": 1,
+      "message": "Why?",
+      "revId": "ff64507ed1c06289eee7cee9060b72c7d16dfc9e",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "00d435e0_548c6c25",
+        "filename": "misc/keyholder.service",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-11-21T14:57:32Z",
+      "side": 1,
+      "message": "Same as ExecStop.",
+      "revId": "ff64507ed1c06289eee7cee9060b72c7d16dfc9e",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "e76118d3_cf778adc",
+        "filename": "misc/keyholder.service",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-11-21T14:57:32Z",
+      "side": 1,
+      "message": "Why /usr/local/bin? Should be in /usr/sbin/ I think?",
+      "revId": "ff64507ed1c06289eee7cee9060b72c7d16dfc9e",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "369b9bce_049cba84",
+        "filename": "misc/keyholder.service",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 192
+      },
+      "writtenOn": "2018-11-21T14:57:32Z",
+      "side": 1,
+      "message": "That shouldn\u0027t be needed because of I525e468437960148c84b98a0ea61d8a2e6166d43.",
+      "revId": "ff64507ed1c06289eee7cee9060b72c7d16dfc9e",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    }
+  ]
+}
