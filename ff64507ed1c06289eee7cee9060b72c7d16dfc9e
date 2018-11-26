@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "be35981b_a5e00fe3",
+        "filename": "misc/keyholder.service",
+        "patchSetId": 1
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 2321
+      },
+      "writtenOn": "2018-11-26T16:16:47Z",
+      "side": 1,
+      "message": "Done",
+      "parentUuid": "9a6d727e_63d932d6",
+      "revId": "ff64507ed1c06289eee7cee9060b72c7d16dfc9e",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "7d20a182_1b74e8db",
         "filename": "misc/keyholder.service",
         "patchSetId": 1
@@ -30,6 +48,24 @@
       "writtenOn": "2018-11-21T14:57:32Z",
       "side": 1,
       "message": "Why?",
+      "revId": "ff64507ed1c06289eee7cee9060b72c7d16dfc9e",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "785f4cd0_d3c339d9",
+        "filename": "misc/keyholder.service",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 2321
+      },
+      "writtenOn": "2018-11-26T16:16:47Z",
+      "side": 1,
+      "message": "I made this when I was still code reviewing, so it\u0027s based on a bit of an older idea. The idea was, owner can have read/write. keyholder-users would be the group to be added to to even write to the socket in the first place. World can\u0027t do anything.\n\nLatest iteration, I\u0027ve gotten rid of the keyholder-users group and just made the socket world writable. Simplifies this and works fine.",
+      "parentUuid": "7d20a182_1b74e8db",
       "revId": "ff64507ed1c06289eee7cee9060b72c7d16dfc9e",
       "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
       "unresolved": false
@@ -53,6 +89,24 @@
     },
     {
       "key": {
+        "uuid": "b6538f0f_fd1b8ffd",
+        "filename": "misc/keyholder.service",
+        "patchSetId": 1
+      },
+      "lineNbr": 9,
+      "author": {
+        "id": 2321
+      },
+      "writtenOn": "2018-11-26T16:16:47Z",
+      "side": 1,
+      "message": "Done\n\nExecStop removed",
+      "parentUuid": "00d435e0_548c6c25",
+      "revId": "ff64507ed1c06289eee7cee9060b72c7d16dfc9e",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "e76118d3_cf778adc",
         "filename": "misc/keyholder.service",
         "patchSetId": 1
@@ -70,6 +124,24 @@
     },
     {
       "key": {
+        "uuid": "2becd19f_fdce184b",
+        "filename": "misc/keyholder.service",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 2321
+      },
+      "writtenOn": "2018-11-26T16:16:47Z",
+      "side": 1,
+      "message": "Done\n\nInitially just went off where setuptools placed keyholderd.",
+      "parentUuid": "e76118d3_cf778adc",
+      "revId": "ff64507ed1c06289eee7cee9060b72c7d16dfc9e",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "369b9bce_049cba84",
         "filename": "misc/keyholder.service",
         "patchSetId": 1
@@ -81,6 +153,24 @@
       "writtenOn": "2018-11-21T14:57:32Z",
       "side": 1,
       "message": "That shouldn\u0027t be needed because of I525e468437960148c84b98a0ea61d8a2e6166d43.",
+      "revId": "ff64507ed1c06289eee7cee9060b72c7d16dfc9e",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "d93d26cc_5e1b8c64",
+        "filename": "misc/keyholder.service",
+        "patchSetId": 1
+      },
+      "lineNbr": 12,
+      "author": {
+        "id": 2321
+      },
+      "writtenOn": "2018-11-26T16:16:47Z",
+      "side": 1,
+      "message": "I had noticed that was not triggered when I stopped the systemctl service.\n\nIn any event this is now taken care of by RuntimeDirectory:\n\n\u003e In case of RuntimeDirectory\u003d the lowest subdirectories are removed when the unit is stopped",
+      "parentUuid": "369b9bce_049cba84",
       "revId": "ff64507ed1c06289eee7cee9060b72c7d16dfc9e",
       "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
       "unresolved": false
