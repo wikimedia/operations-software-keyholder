@@ -40,6 +40,7 @@ import sys
 
 import yaml
 
+from construct.core import ConstructError
 from keyholder.crypto import ssh_fingerprint, SshRSAKey, SshEd25519Key, SshLock
 from keyholder.protocol.agent import (
     SshAgentRequest,
@@ -48,12 +49,13 @@ from keyholder.protocol.agent import (
     SshAgentResponseCode
 )
 from keyholder.protocol.types import SshRequestPublicKeySignature
-from construct.core import ConstructError
 
 AGENT_MAX_LEN = 256*1024
 SO_PEERCRED = 17
 MCL_CURRENT = 1
 MCL_FUTURE = 2
+
+# pylint: disable=no-else-return
 
 logger = logging.getLogger('keyholder')  # pylint: disable=invalid-name
 
@@ -74,8 +76,10 @@ class SshAgentConfig:
         """Load or reload the configuration."""
         self.perms = self.get_key_perms(self.auth_dir, self.key_dir)
 
-    def sighandle(self, signum, frame):
+    def sighandle(self, signum, frame):  # pylint: disable=unused-argument
         """Called as a signal handler; calls reload."""
+        # pylint as of 2.1.1 doesn't recognize signal.Signals?
+        # pylint: disable=no-member
         logger.info('Caught %s, reloading', signal.Signals(signum).name)
         self.reload()
 
@@ -254,7 +258,7 @@ class SshAgentHandler(socketserver.StreamRequestHandler):
         # if a single code (e.g. SUCCESS or FAILURE) was returned, convert into
         # a (code, message) response tuple, but with an empty message
         if isinstance(response, SshAgentResponseCode):
-            response = (response,)  # pylint: disable=redefined-variable-type
+            response = (response,)
 
         # finally, build and send the appropriate response
         try:
@@ -283,7 +287,6 @@ class SshAgentHandler(socketserver.StreamRequestHandler):
             return SshAgentResponseCode.FAILURE
 
         try:
-            # pylint: disable=redefined-variable-type
             if identity.key_type == 'ssh-rsa':
                 tup = [getattr(identity.key, t) for t in 'nedpq']
                 key = SshRSAKey(tup, identity.key.comment)

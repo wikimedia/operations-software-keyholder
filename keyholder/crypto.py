@@ -21,8 +21,6 @@ import base64
 import binascii
 import hashlib
 import os
-from keyholder.protocol.agent import SshAgentSignatureFlags
-from keyholder.protocol.types import SshRSAKeyBlob, SshEd25519KeyBlob
 
 # for RSA
 from Crypto.Hash import SHA, SHA256, SHA512
@@ -31,6 +29,11 @@ from Crypto.Signature import PKCS1_v1_5
 
 # for ed25519
 import nacl.signing
+
+from keyholder.protocol.agent import SshAgentSignatureFlags
+from keyholder.protocol.types import SshRSAKeyBlob, SshEd25519KeyBlob
+
+# pylint: disable=no-else-return
 
 
 def ssh_fingerprint(blob, hash_type='sha256'):
@@ -130,7 +133,6 @@ class SshRSAKey(SshBaseKey):
         })
 
     def sign(self, data, flags):
-        # pylint: disable=redefined-variable-type
         if flags == SshAgentSignatureFlags.AGENT_RSA_SHA2_256:
             hsh = SHA256.new(data)
         elif flags == SshAgentSignatureFlags.AGENT_RSA_SHA2_512:
