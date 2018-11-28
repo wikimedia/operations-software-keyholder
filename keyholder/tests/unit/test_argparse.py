@@ -1,7 +1,7 @@
 """Argument parse tests."""
 
-import keyholder.daemon
 import pytest
+import keyholder.daemon
 
 
 def test_parse_args_help(capsys):

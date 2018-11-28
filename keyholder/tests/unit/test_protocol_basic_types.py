@@ -1,8 +1,8 @@
 """SSH basic data types tests."""
 
-from keyholder.protocol.types import SshBytes, SshString, SshMPInt
-from construct.core import ConstructError
 import pytest
+from construct.core import ConstructError
+from keyholder.protocol.types import SshBytes, SshString, SshMPInt
 
 
 @pytest.mark.parametrize("value, representation", [
