@@ -160,8 +160,7 @@ class SshAgentHandler(socketserver.StreamRequestHandler):
         ucred = sock.getsockopt(socket.SOL_SOCKET, SO_PEERCRED, s_ucred.size)
         _, uid, gid = s_ucred.unpack(ucred)
         user = pwd.getpwuid(uid).pw_name
-        groups = {grp.getgrgid(gid).gr_name}
-        groups.update(g.gr_name for g in grp.getgrall() if user in g.gr_mem)
+        groups = {grp.getgrgid(g).gr_name for g in os.getgrouplist(user, gid)}
         return user, groups
 
     def recv_request(self):
