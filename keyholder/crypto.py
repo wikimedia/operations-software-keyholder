@@ -31,7 +31,7 @@ from Crypto.Signature import PKCS1_v1_5
 import nacl.signing
 
 from keyholder.protocol.agent import SshAgentSignatureFlags
-from keyholder.protocol.types import SshRSAKeyBlob, SshEd25519KeyBlob
+from keyholder.protocol.types import SshKeyBlob
 
 # pylint: disable=no-else-return
 
@@ -127,9 +127,12 @@ class SshRSAKey(SshBaseKey):
 
     @property
     def key_blob(self):
-        return SshRSAKeyBlob.build({
-            'e': self.private_key.e,
-            'n': self.private_key.n,
+        return SshKeyBlob.build({
+            'algo': 'ssh-rsa',
+            'blob': {
+                'e': self.private_key.e,
+                'n': self.private_key.n,
+            },
         })
 
     def sign(self, data, flags):
@@ -166,8 +169,11 @@ class SshEd25519Key(SshBaseKey):
 
     @property
     def key_blob(self):
-        return SshEd25519KeyBlob.build({
-            'public_key': self.public_key.encode(),
+        return SshKeyBlob.build({
+            'algo': 'ssh-ed25519',
+            'blob': {
+                'public_key': self.public_key.encode(),
+            },
         })
 
     def sign(self, data, flags):
