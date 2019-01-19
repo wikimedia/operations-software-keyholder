@@ -8,16 +8,26 @@ import pytest
 from keyholder import daemon
 
 
-def test_config(caplog):
+def test_config(caplog, shared_datadir):
     """Test the configuration handling and loading."""
-    # load with a non-existing directory
     caplog.set_level(logging.INFO)
+
+    # load with a non-existing directory
     not_a_dir = "/nonexistent"
     args = daemon.parse_args(["--auth-dir", not_a_dir, "--key-dir", not_a_dir])
     config = daemon.SshAgentConfig(args.auth_dir, args.key_dir)
     assert "/nonexistent is not a directory" in caplog.text
 
-    # test the signal handler
+    # load with test data
+    auth_dir = shared_datadir / "auth-dir"
+    key_dir = shared_datadir / "key-dir"
+    config = daemon.SshAgentConfig(auth_dir, key_dir)
+    assert "Successfully loaded" in caplog.text
+    assert "Could not parse key " + str(key_dir / "invalid.pub") in caplog.text
+    assert "Fingerprint not found for key nonexistingkey" in caplog.text
+    assert "Unable to parse " + str(auth_dir / "invalid.yaml") in caplog.text
+
+    # reload
     config.sighandle(signal.SIGHUP, None)
     assert "reloading" in caplog.text
 

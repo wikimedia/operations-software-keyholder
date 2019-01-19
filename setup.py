@@ -14,6 +14,7 @@ test_requires = [
     "coverage",
     "pytest",
     "pytest-cov",
+    "pytest-datadir",
 ]
 extras = {
     "tests": test_requires,
