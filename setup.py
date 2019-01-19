@@ -29,6 +29,7 @@ setuptools.setup(
         'Intended Audience :: System Administrators',
     ],
     keywords=['ssh', 'agent'],
+    python_requires='>=3.5',
     install_requires=[
         'pyyaml',
         'construct>=2.8,<3',
