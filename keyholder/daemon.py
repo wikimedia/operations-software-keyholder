@@ -70,27 +70,27 @@ class SshAgentConfig:
     def __init__(self, auth_dir, key_dir):
         self.auth_dir = auth_dir
         self.key_dir = key_dir
+        self.perms = {}
         self.reload()
 
     def reload(self):
         """Load or reload the configuration."""
-        self.perms = self.get_key_perms(self.auth_dir, self.key_dir)
+        self.perms = self.get_key_perms()
 
-    def sighandle(self, signum, frame):  # pylint: disable=unused-argument
+    def sighandle(self, signum, _):
         """Called as a signal handler; calls reload."""
         # pylint as of 2.1.1 doesn't recognize signal.Signals?
         # pylint: disable=no-member
         logger.info('Caught %s, reloading', signal.Signals(signum).name)
         self.reload()
 
-    @classmethod
-    def get_key_fingerprints(cls, key_dir):
+    def get_key_fingerprints(self):
         """Look up the key fingerprints for all keys held by keyholder"""
         keymap = {}
-        if not key_dir.is_dir():
-            logger.warning('%s is not a directory', key_dir)
+        if not self.key_dir.is_dir():
+            logger.warning('%s is not a directory', self.key_dir)
 
-        for fname in key_dir.glob('*.pub'):
+        for fname in self.key_dir.glob('*.pub'):
             try:
                 _, key_blob64, _ = fname.read_bytes().split()
                 key_blob = base64.b64decode(key_blob64, validate=True)
@@ -104,15 +104,14 @@ class SshAgentConfig:
         logger.info('Successfully loaded %d key(s)', len(keymap))
         return keymap
 
-    @classmethod
-    def get_key_perms(cls, auth_dir, key_dir):
+    def get_key_perms(self):
         """Recursively walk `auth_dir`, loading YAML configuration files."""
         key_perms = {}
-        fingerprints = cls.get_key_fingerprints(key_dir)
-        if not auth_dir.is_dir():
-            logger.warning('%s is not a directory', auth_dir)
+        fingerprints = self.get_key_fingerprints()
+        if not self.auth_dir.is_dir():
+            logger.warning('%s is not a directory', self.auth_dir)
 
-        for fname in auth_dir.glob('*.y*ml'):
+        for fname in self.auth_dir.glob('*.y*ml'):
             try:
                 data = yaml.safe_load(fname.read_bytes()).items()
             except OSError as exc:
