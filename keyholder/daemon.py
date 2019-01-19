@@ -140,6 +140,7 @@ class SshAgentServer(socketserver.ThreadingUnixStreamServer):
         self.keys = collections.OrderedDict()
         self.config = config
         self.lock = SshLock()
+        logger.info('Initialized and serving requests')
 
     def server_close(self):
         super().server_close()
@@ -472,14 +473,16 @@ def main(argv=None):
     mlockall()
 
     config = SshAgentConfig(args.auth_dir, args.key_dir)
-    signal.signal(signal.SIGHUP, config.sighandle)
-    logger.info('Initialized and serving requests')
-
-    server = SshAgentServer(args.bind, config)
 
     try:
+        signal.signal(signal.SIGHUP, config.sighandle)
+    except ValueError as exc:
+        logging.warning('Unable to set up signal handler: %s', exc)
+
+    server = SshAgentServer(args.bind, config)
+    try:
         server.serve_forever()
-    except (SystemExit, KeyboardInterrupt):
+    except (SystemExit, KeyboardInterrupt):  # pragma: no cover
         logger.info('Shutting down')
     server.server_close()
 
