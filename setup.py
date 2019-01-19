@@ -10,8 +10,14 @@ def readme():
         return handle.read()
 
 
-test_requires = ['coverage', 'pytest']
-extras = {'tests': test_requires}
+test_requires = [
+    "coverage",
+    "pytest",
+    "pytest-cov",
+]
+extras = {
+    "tests": test_requires,
+}
 
 setuptools.setup(
     name='keyholder',
