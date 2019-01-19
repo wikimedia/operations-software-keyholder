@@ -28,6 +28,7 @@ from construct import (
 from construct.version import version as CONSTRUCT_VERSION
 
 
+# pylint: disable=abstract-method
 class PyEnum(Adapter):
     """Adapt Python's Enum to its value and vice-versa.
 
@@ -64,6 +65,7 @@ class OurConst(ConstructConst):
         super().__init__(subcon, value)
 
 
+# pylint: disable=invalid-name
 if CONSTRUCT_VERSION >= (2, 8, 22):
     Const = ConstructConst
 else:
