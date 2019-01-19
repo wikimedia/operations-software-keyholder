@@ -178,6 +178,7 @@ SshAgentRequest = FocusedSeq(
     Terminated
 )
 
+SshAgentResponseHeader = Int32ub
 SshAgentResponse = FocusedSeq(
     'response',
     'response' / Prefixed(Int32ub, Struct(

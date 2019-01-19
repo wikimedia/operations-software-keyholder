@@ -32,6 +32,7 @@ from construct import (
     FocusedSeq,
     Prefixed,
     Select,
+    Switch,
     Rebuild,
     Terminated,
     this
@@ -53,17 +54,47 @@ SshMPInt = Select(
 )
 
 # RFC 4253 section 6.6
+SshDSAKeyBlob = Struct(
+    'p' / SshMPInt,
+    'q' / SshMPInt,
+    'g' / SshMPInt,
+    'y' / SshMPInt,
+    Terminated
+)
+
 SshRSAKeyBlob = Struct(
-    'algo' / Const('ssh-rsa', SshString),
     'e' / SshMPInt,
     'n' / SshMPInt,
     Terminated
 )
 
+# RFC 5656, section 3.1
+SshECDSAKeyBlob = Struct(
+    'identifier' / SshString,
+    'Q' / SshBytes,
+    Terminated
+)
+
 # I-D.ietf-curdle-ssh-ed25519, section 4
 SshEd25519KeyBlob = Struct(
-    'algo' / Const('ssh-ed25519', SshString),
     'public_key' / SshBytes,
+    Terminated
+)
+
+# RFC 4253 section 6.6
+SshKeyBlob = Struct(
+    'algo' / SshString,
+    'blob' / Switch(
+        this.algo, {
+            'ssh-dss': SshDSAKeyBlob,
+            'ssh-rsa': SshRSAKeyBlob,
+            'ecdsa-sha2-nistp256': SshECDSAKeyBlob,
+            'ecdsa-sha2-nistp384': SshECDSAKeyBlob,
+            'ecdsa-sha2-nistp521': SshECDSAKeyBlob,
+            'ssh-ed25519': SshEd25519KeyBlob,
+        },
+        default=GreedyBytes
+    ),
     Terminated
 )
 
