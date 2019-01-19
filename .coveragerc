@@ -5,6 +5,7 @@ omit = keyholder/tests/*
 [report]
 show_missing = True
 exclude_lines =
+    pragma: no cover
     ^\s*raise NotImplementedError\b
     ^\s*return NotImplemented\b
     ^if __name__ == ['"]__main__['"]:$
