@@ -27,9 +27,14 @@ def test_config(caplog, shared_datadir):
     assert "Fingerprint not found for key nonexistingkey" in caplog.text
     assert "Unable to parse " + str(auth_dir / "invalid.yaml") in caplog.text
 
-    # reload
+    # try making a key and config inaccesible
+    os.chmod(str(key_dir / "invalid.pub"), 0)
+    os.chmod(str(auth_dir / "invalid.yaml"), 0)
+
+    # reload and test for the error reading the above
     config.sighandle(signal.SIGHUP, None)
     assert "reloading" in caplog.text
+    assert "Unable to read" in caplog.text
 
 
 def test_parse_args():
