@@ -94,6 +94,9 @@ class SshAgentConfig:
             try:
                 _, key_blob64, _ = fname.read_bytes().split()
                 key_blob = base64.b64decode(key_blob64, validate=True)
+            except OSError as exc:
+                logger.warning('Unable to read key %s: %s', fname, exc)
+                continue
             except (ValueError, binascii.Error) as exc:
                 logger.warning('Could not parse key %s: %s', fname, exc)
                 continue
