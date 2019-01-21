@@ -432,10 +432,14 @@ def setup_logging(debug):
         logger.addHandler(stream_handler)
     else:
         logger.setLevel(logging.INFO)
-        syslog_handler = logging.handlers.SysLogHandler(
-            address='/dev/log',
-            facility='auth',
-        )
+        # we cannot actually duck-type this, as Python >= 3.6 catches and
+        # ignores all OSErrors in logging.handlers, including FileNotFoundError
+        if pathlib.Path('/dev/log').is_socket():
+            syslog_handler = logging.handlers.SysLogHandler(
+                address='/dev/log', facility='auth'
+            )
+        else:
+            syslog_handler = logging.handlers.SysLogHandler(facility='auth')
         fmt = logging.Formatter('%(name)s[%(process)d]: %(message)s')
         fmt.formatException = lambda x: ''
         syslog_handler.setFormatter(fmt)
