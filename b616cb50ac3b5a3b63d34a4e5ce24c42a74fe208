@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "414329ed_e7b79bfe",
+        "filename": "setup.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 18,
+      "author": {
+        "id": 3215
+      },
+      "writtenOn": "2019-05-16T16:02:51Z",
+      "side": 1,
+      "message": "shouldn\u0027t this be used below inside setup() passing it to extras_require?",
+      "revId": "b616cb50ac3b5a3b63d34a4e5ce24c42a74fe208",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "ebc7d091_288848dd",
+        "filename": "setup.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 20,
+      "author": {
+        "id": 3215
+      },
+      "writtenOn": "2019-05-16T16:02:51Z",
+      "side": 1,
+      "message": "[nitpick] the rest of the file seems to use single quotes ;)",
+      "revId": "b616cb50ac3b5a3b63d34a4e5ce24c42a74fe208",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
+    }
+  ]
+}
