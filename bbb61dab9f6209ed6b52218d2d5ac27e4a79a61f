@@ -1,0 +1,78 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5676944a_f572e998",
+        "filename": "tox.ini",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 3215
+      },
+      "writtenOn": "2019-05-16T15:55:29Z",
+      "side": 1,
+      "message": "[unrelated comment] I think that the various env sections can be compressed into a single one, see a fairly complex example here:\nhttps://gerrit.wikimedia.org/r/plugins/gitiles/operations/software/cumin/+/master/tox.ini (we now can use tox 3.10 on demand on CI, see Ic260dd4d2ab565391861811e7c3e45f618c2a4dd",
+      "revId": "bbb61dab9f6209ed6b52218d2d5ac27e4a79a61f",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "929a7bb4_b7bc9445",
+        "filename": "tox.ini",
+        "patchSetId": 1
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 3215
+      },
+      "writtenOn": "2019-05-16T15:55:29Z",
+      "side": 1,
+      "message": "[optional] interesting choice to run flake8 and pylint on the default CI python version only. I tend to run them on all setup envs to make sure to not introduce incompatibilities.",
+      "revId": "bbb61dab9f6209ed6b52218d2d5ac27e4a79a61f",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "7012ab87_49e40e2c",
+        "filename": "tox.ini",
+        "patchSetId": 1
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 3215
+      },
+      "writtenOn": "2019-05-16T15:55:29Z",
+      "side": 1,
+      "message": "[nitpick] If you keep the single pylint env you can use py3-{flake8,pylint} and this should allow to get rid of this line and the equivalent in flake8",
+      "revId": "bbb61dab9f6209ed6b52218d2d5ac27e4a79a61f",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
+    },
+    {
+      "key": {
+        "uuid": "d76fd0db_c9431312",
+        "filename": "tox.ini",
+        "patchSetId": 1
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 3215
+      },
+      "writtenOn": "2019-05-16T15:55:29Z",
+      "side": 1,
+      "message": "[nitpick] {toxinidir}/tox.ini should be more safe/compatible",
+      "range": {
+        "startLine": 17,
+        "startChar": 27,
+        "endLine": 17,
+        "endChar": 34
+      },
+      "revId": "bbb61dab9f6209ed6b52218d2d5ac27e4a79a61f",
+      "serverId": "e9e9afe9-4712-486d-8885-f54b72dd1951",
+      "unresolved": true
+    }
+  ]
+}
