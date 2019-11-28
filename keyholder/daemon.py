@@ -134,6 +134,11 @@ class SshAgentConfig:
 
 class SshAgentServer(socketserver.ThreadingUnixStreamServer):
     """A threaded server that listens on a UNIX domain socket."""
+    # Mark threads as daemon in order to prevent Python 3.7+ classes that
+    # inherit from ThreadingMixIn to keep track of each created thread to be
+    # able to wait for them on exit, hence creating a memory leak during the
+    # daemon lifetime.
+    daemon_threads = True
 
     def __init__(self, server_address, config):
         super().__init__(server_address, SshAgentHandler)
