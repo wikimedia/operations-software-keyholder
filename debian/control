@@ -1,0 +1,40 @@
+Source: keyholder
+Maintainer: Antoine Musso <hashar@free.fr>
+Section: admin
+Priority: optional
+Standards-Version: 3.9.8
+X-Python-Version: >= 3.4
+Build-Depends:
+ debhelper (>=9),
+ python3-all,
+ dh-python,
+ python3-setuptools,
+# setup_requires
+ python3-setuptools-scm,
+# install_requires
+ python3-yaml,
+ python3-construct,
+ python3-nacl,
+ python3-crypto,
+# tests
+ python3-pytest,
+ python3-pytest-runner
+Vcs-Git: https://gerrit.wikimedia.org/r/operations/software/keyholder.git
+Vcs-Browser: https://gerrit.wikimedia.org/g/operations/software/keyholder
+
+Package: keyholder
+Architecture: any
+Depends:
+ ${python3:Depends},
+ ${misc:Depends},
+ openssh-client
+Description: SSH agent to share identities
+ Keyholder holds SSH identities and expose a proxy to local user. A set of
+ permissions rules allow members of a unix group access to one or more of
+ the identities.
+ .
+ As such, keyholder provides a mean to share a SSH identity without exposing
+ the identity private key or its passphrase.
+ .
+ Once configured and running, users point SSH_AUTH_SOCK to the keyholder socket
+ in order to use the identities.
